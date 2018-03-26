@@ -1,0 +1,158 @@
+---
+title: "ml_a1_md_draft"
+author: "Josh Grosman and Tim Kirkbride"
+date: "March 23, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(mlr)
+```
+
+## Introduction
+
+This project aimed to construct a classification model to predict whether a Kickstarter project will be successful or otherwise. This project is split into two phases: Phase 1, which will focus on data preprocessing and exploration, and Phase 2, which will be concered with model building and validation. Only Phase 1 of the project will be presented in this report. In this phase, the dataset and its attrbiutes will be unpacked and described. The data will then be cleaned and preprocessed and finally, all relevant attrbiutes will be explored with regards to their relationships with each other.
+
+## Dataset
+
+```{r}
+ks <- read_csv("C:/Users/Jgros/Downloads/MachineLearning/ks-projects-201801.csv")
+```
+
+The dataset used was obtained from Kaggle and can be found here:
+
+https://www.kaggle.com/kemical/kickstarter-projects/data
+
+This project used the 2018 dataset, which contained the more recently updated data. The dataset contained 378,661 observations, each corresponding to a different Kickstarter project launched between 2009-2018. The dataset consisted of 14 feature variables and one target variable. 
+
+
+### Target Feautre
+
+The target feature used in this analysis was the state of the project at the time of its deadline. The levels of the target variable are denoted as follows:
+
+* Cancelled: If the project was cancelled premature to its deadline
+
+* Failed: If the project was unable to generate its goal amount by the time of its deadline
+
+* Live: If the project has not yet reached its deadline and is still active
+
+* Succesful: If the project was able to at least generate its goal amount by the time of its deadline
+
+* Suspended: If the project is found to be in breech of the Kickstarter rules, all funding for the project stops indefintely and all previous pledges are cancelled
+
+* Undefined: If it is unknown which of the above categories is most appropriate
+
+While the target feature was originally comprised of six classes, the present analysis was only concerned with predicting whether a Kickstarter project will be successful or fail. Furthermore, all of the observations which related to the four remaining target levels combined only comprised a minority of the overall observations (10.91%). As such, it was decided that observations classifed under the levels of live, canceled, suspended or undefined would not be considered in the analysis, and only observations relating to successful or failed projects would be retained.
+
+```{r}
+ks_filt<-ks%>%filter(state %in% c("successful","failed"))
+```
+
+As as result of this, the dataset now contained 331,675 observations relating to successful and failed Kickstarter projects. The target feature would only have two classes and therefore the analysis would be binary classifcation.
+
+### Descriptive Features
+
+* ID: continuous
+* name: string
+* category: factor (159 levels)
+* main_category: factor (Art, Comics, Crafts, Dance, Design, Fashion, Film & Video, Food, Games, Journalism, Music, Photography, Publishing, Technology, Theater)
+* currency: factor (AUD, CAD, CHF, DKK, EUR, GBP, HKD, JPY, MXN, NOK, NZD, SEK, SGD, USD)
+* deadline: date
+* goal: continuous
+* launched: date
+* pledged: continuous
+* backers: integer
+* country: (AT, AU, BE, CA, CH, DE, DK, ES, FR, GB, HK, IE, IT, JP, LU, MX, N,0\", NL, NO, NZ, SE, SG, US)
+* us_pledged: continuous
+* us_pledged_real: continuous
+* us_goal_real: continuous
+
+Many of the descriptive features here are self-explanatory. The last three features are corrections of the pledged and goal features, which convert the relevant currency amounts of the associated observations to USD. Information from the website where the dataset was retrived suggests that usd_pledged was created to standardise the pledged column to USD, but there were issues with the conversion which resulted in errors. The usd_pledged_real feature amended these errors and has the correct amount pledged in USD. The feature usd_goal_real has the USD amount of the project's goal.
+
+Inspection of the levels of the country feature highlight a potential typo, where a country was assigned the code 'N,0\"', which clearly does not correspond with the rest of the levels. This will be examined further in the next section of this report.
+
+## Data Preprocessing
+
+### Initial Inspection and Error Identification
+
+Prior to summarization, some obviously redundant columns were removed. The features ID and name would clearly add no value in predicting the target variable and were dropped. Additionally, as the columns usd_goal_real and usd_pledged_real contained the correct standardised goal and pledged amounts respectively, the pledged, goal and usd_pledged features were no longer relevant and were dropped.
+
+```{r}
+ks_filt$ID<-NULL
+ks_filt$name<-NULL
+ks_filt$`usd pledged`<-NULL
+ks_filt$pledged<-NULL
+ks_filt$goal<-NULL
+```
+
+The data was summarised in Table 1 and 2 below.
+
+```{r}
+head(ks_filt)%>% knitr::kable( caption = 'Table 1. First 6 rows of Kickstarter Data')
+```
+
+
+```{r}
+summarizeColumns(ks_filt)%>% knitr::kable( caption = 'Feature Summary before Data Preprocessing')
+
+```
+
+From Table 1 and Table 2, it is clear that data has been read in correctly and there does not appear to be any obvious errors/typos. However, some issues were noted.
+
+*As mentioned previously, there was a suspected typo in the name of one the levels of the country feature - N,0\".
+
+*Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue later in the analysis. Furthermore, both columns will ultimately need to be aggreagted to be used in the model.
+
+*The catergory and main_category cloumns appear to represent the same underlying feature - the type of buisness of the Kickstarter project, however, as seen in Table 2, the cardinality of category is very large at 159 levels compared to that of main_category, which has only 15 levels.
+
+*It is clear that all factor columns were defined as the character class and will need be converted.
+
+### Data Wrangling and Correction
+
+Firstly, the extent of typo within the levels of the country feature was explored further.
+
+```{r}
+ks_filt$country<-factor(ks_filt$country)
+ks_typo<-ks_filt%>%filter(country == "N,0\"")
+nrow(ks_typo)
+```
+
+Evidently, there were 210 observations associted with the value N,0\" as a country code (approximately .06% of all observations). Perusal of the webite where data were retreived provided no explaination to the meaning of this value. As such, it was decided that all observations which were associted with the country code N,0\" would be dropped.
+
+```{r}
+ks_filt<-ks_filt%>%filter(country != "N,0\"")
+```
+
+Next, the launched column would have to be converted to the correct date format. In its current state, launched included not only the date, but also the time at which the project was launched, which has no value in this anlysis. As such, it was converted.
+
+```{r}
+ks_filt$launched <- format(as.POSIXct(ks_filt$launched,format='%Y/%m/%d %H:%M:%S'),format='%Y/%m/%d')
+ks_filt$launched<-ks_filt$launched%>%as.Date()
+```
+
+It was then considered beneficial to construct an additional feature from the launched and deadline columns - duration. This feature would represent the time in days the project lasted, and would be calculated as the difference between the launched and deadline columns.
+
+```{r}
+ks_filt$duration<-as.numeric(ks_filt$deadline-ks_filt$launched)
+```
+
+As the dates within the launched and deadline columns are specific to the day, they would not be appropriate for use as a categorical feature as there would be far too many levels. Also, with the addition of the duration feature to the dataset, the deadline feature may not be particularly valuable in a model. Therefore, it was decided to replace the launched feautre with two new columns - launched_month and launched_year - which would simply represent the month and year each project was launched, respectively. Additionally, the deadline column would be dropped as its information would be captured by the new launched features and the duration feature.
+
+```{r}
+
+```
+
+Main_category was found to simply be a reduced version of catgeory with far fewer levels. This left category essentially redundant, so it was removed.
+
+```{r}
+
+```
+
+Finally, all features loaded in as the character type were converted to factors.
+
+```{r}
+ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.character)], as.factor)
+```
+
