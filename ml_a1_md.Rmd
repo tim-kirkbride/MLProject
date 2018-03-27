@@ -9,6 +9,7 @@ output: html_document
 library(readr)
 library(dplyr)
 library(mlr)
+library(lubridate)
 ```
 
 ## Introduction
@@ -87,7 +88,7 @@ ks_filt$pledged<-NULL
 ks_filt$goal<-NULL
 ```
 
-The data was summarised in Table 1 and 2 below.
+The dataset was summarised in Table 1 and 2 below.
 
 ```{r}
 head(ks_filt)%>% knitr::kable( caption = 'Table 1. First 6 rows of Kickstarter Data')
@@ -95,35 +96,36 @@ head(ks_filt)%>% knitr::kable( caption = 'Table 1. First 6 rows of Kickstarter D
 
 
 ```{r}
-summarizeColumns(ks_filt)%>% knitr::kable( caption = 'Feature Summary before Data Preprocessing')
+summarizeColumns(ks_filt)%>% knitr::kable( caption = 'Table 2. Feature Summary before Data Preprocessing')
 
 ```
 
-From Table 1 and Table 2, it is clear that data has been read in correctly and there does not appear to be any obvious errors/typos. However, some issues were noted.
+From Table 1 and Table 2, it is clear that data has been read in correctly and there no missing values or any obvious errors/typos. However, some issues were noted.
 
-*As mentioned previously, there was a suspected typo in the name of one the levels of the country feature - N,0\".
+* As mentioned previously, there was a suspected typo in the name of one the levels of the country feature - N,0\".
 
-*Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue later in the analysis. Furthermore, both columns will ultimately need to be aggreagted to be used in the model.
+* Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue later in the analysis. Furthermore, dates will ultimately need to be aggregated to be used in the model.
 
-*The catergory and main_category cloumns appear to represent the same underlying feature - the type of buisness of the Kickstarter project, however, as seen in Table 2, the cardinality of category is very large at 159 levels compared to that of main_category, which has only 15 levels.
+* The catergory and main_category columns appear to represent the same underlying feature - the type of buisness of the Kickstarter project, however, as seen in Table 2, the cardinality of category is very large at 159 levels compared to that of main_category, which has only 15 levels.
 
-*It is clear that all factor columns were defined as the character class and will need be converted.
+* It is clear that all factor columns were defined as the character class when imported and will need be converted.
 
 ### Data Wrangling and Correction
 
-Firstly, the extent of typo within the levels of the country feature was explored further.
+Firstly, the extent of the N,0\" typo within the country feature was explored further. Perusal of the website where data were retreived provided no explaination to the meaning of this value. Therefore, this level was considered to classify as a missing value, and was converted as such. The proportion of complete cases (i.e. those which had no missing values) was then calculated.
 
 ```{r}
-ks_filt$country<-factor(ks_filt$country)
-ks_typo<-ks_filt%>%filter(country == "N,0\"")
-nrow(ks_typo)
+ks_filt$country <- ifelse(ks_filt$country == "N,0\"", NA, ks_filt$country)
+sum(complete.cases(ks_filt))/nrow(ks_filt)
 ```
 
-Evidently, there were 210 observations associted with the value N,0\" as a country code (approximately .06% of all observations). Perusal of the webite where data were retreived provided no explaination to the meaning of this value. As such, it was decided that all observations which were associted with the country code N,0\" would be dropped.
+Here, we see that the proprotion of complete cases is very high, at 99.94% of all observations. This suggested that the number of observations affected by the typo was minimal and as such, it was deemed appropriate to omit all affected observations from the analysis.
 
 ```{r}
-ks_filt<-ks_filt%>%filter(country != "N,0\"")
+ks_filt<-ks_filt%>%na.omit()
 ```
+
+After this, the number of observations became 331,465.
 
 Next, the launched column would have to be converted to the correct date format. In its current state, launched included not only the date, but also the time at which the project was launched, which has no value in this anlysis. As such, it was converted.
 
@@ -138,16 +140,19 @@ It was then considered beneficial to construct an additional feature from the la
 ks_filt$duration<-as.numeric(ks_filt$deadline-ks_filt$launched)
 ```
 
-As the dates within the launched and deadline columns are specific to the day, they would not be appropriate for use as a categorical feature as there would be far too many levels. Also, with the addition of the duration feature to the dataset, the deadline feature may not be particularly valuable in a model. Therefore, it was decided to replace the launched feautre with two new columns - launched_month and launched_year - which would simply represent the month and year each project was launched, respectively. Additionally, the deadline column would be dropped as its information would be captured by the new launched features and the duration feature.
+As the dates within the launched and deadline columns are specific to the day, they would not be appropriate for use as a categorical feature as there would be far too many levels. Also, with the addition of the duration feature to the dataset, the deadline feature may no longer be particularly valuable in a model. Considering this, it was decided to replace the launched feautre with two new columns - launched_month and launched_year - which would simply represent the month and year each project was launched, respectively. After this, the launched column would no longer be needed so it was dropped. Additionally, the deadline column would be dropped as its information would be captured by the new launched features and the duration feature.
 
 ```{r}
-
+ks_filt$launched_month<-as.factor(month(ymd(ks_filt$launched)))
+ks_filt$launched_year<-as.factor(year(ymd(ks_filt$launched)))
+ks_filt$launched<-NULL
+ks_filt$deadline<-NULL
 ```
 
-Main_category was found to simply be a reduced version of catgeory with far fewer levels. This left category essentially redundant, so it was removed.
+Next, the main category and category features were considered. Inspection of these features highlighted that main_category was simply be a reduced version of catgeory with far fewer levels. This left category essentially redundant, so it was removed.
 
 ```{r}
-
+ks_filt$category<-NULL
 ```
 
 Finally, all features loaded in as the character type were converted to factors.
@@ -156,3 +161,5 @@ Finally, all features loaded in as the character type were converted to factors.
 ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.character)], as.factor)
 ```
 
+
+REDUNDANCY BETWEEN COUNTRY AND CURRENCY (REPLACE COUNTRY WITH CONTINENT OR DROP CURRECNY?)
