@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+library(ggplot2)
 library(readr)
 library(dplyr)
 library(mlr)
@@ -19,7 +20,8 @@ This project aimed to construct a classification model to predict whether a Kick
 ## Dataset
 
 ```{r}
-ks <- read_csv("C:/Users/Jgros/Downloads/MachineLearning/ks-projects-201801.csv")
+setwd()
+ks <- read_csv("ks-projects-201801.csv")
 ```
 
 The dataset used was obtained from Kaggle and can be found here:
@@ -163,3 +165,101 @@ ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.char
 
 
 REDUNDANCY BETWEEN COUNTRY AND CURRENCY (REPLACE COUNTRY WITH CONTINENT OR DROP CURRECNY?)
+
+
+### Data Exploration
+
+## Univariate Visualisations
+
+# Analysis of Goals
+
+First off, we will visualise the main_category variable 
+
+```{r}
+cat <- ggplot(ks_filt, aes(x = main_category))
+
+cat + geom_bar()
+```
+
+This plot can be improved through adding titles, comparing the successful and failed projects and rotating the axis labels
+
+```{r}
+cat + geom_bar(aes(fill = state), position = "dodge") + 
+  labs(fill = "Outcome",
+       title = "Main Category of Project by Outcome",
+       x = "Main Category",
+       y = "Count") +
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+Next, we visualise the duration of the project's funding window
+
+```{r}
+g <- ggplot(ks_filt, aes(x = duration))
+
+#g + geom_histogram()
+
+g + geom_histogram(aes(fill = state)) + 
+labs(title = "Duration of Project, by Outcome",
+x = "Duration",
+y = "Count",
+fill = "Outcome") +
+facet_grid(~state)
+```
+
+Next is backers
+
+```{r}
+# couldnt get this to work, will need to come back to it
+
+
+backers <- ggplot(ks_filt, aes(x = backers))
+
+backers + geom_histogram()
+
+```
+
+Here we can see that there is an obviouos outlier, to improve the data, we should inspect this row
+
+```{r}
+# couldnt get this to work, will need to come back to it
+
+max(ks_filt$backers)
+
+ks %>% filter(backers == max(ks_filt$backers))
+
+```
+
+With further research we can see that this is a valid row (The project was the most backed of all time), for visualisation purposes however, will we remove it from the plot
+
+```{r}
+# couldnt get this to work, will need to come back to it
+
+vis_backers <- ks_filt %>% filter(backers < "50000")
+
+filt_backers <- ggplot(vis_backers, aes(x = backers))
+
+filt_backers + geom_histogram()
+
+```
+
+usd_goal_real
+
+```{r}
+goal <- ggplot(ks_filt, aes(x = usd_goal_real))
+
+goal + geom_histogram()
+```
+
+Filtering the data 
+
+```{r}
+ks_goal <- ks_filt %>% filter(usd_goal_real <= 10000)
+
+filt_goal <- ggplot(ks_goal, aes(x = usd_goal_real))
+
+filt_goal + geom_histogram()
+
+filt_goal + geom_histogram(aes(fill = state)) +
+facet_grid(~state)
+```
