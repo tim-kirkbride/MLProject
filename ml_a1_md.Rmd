@@ -20,7 +20,6 @@ This project aimed to construct a classification model to predict whether a Kick
 ## Dataset
 
 ```{r}
-setwd()
 ks <- read_csv("ks-projects-201801.csv")
 ```
 
@@ -173,6 +172,15 @@ REDUNDANCY BETWEEN COUNTRY AND CURRENCY (REPLACE COUNTRY WITH CONTINENT OR DROP 
 
 # Analysis of Goals
 
+Comparison of proportions within the target feature levels
+
+```{r}
+lev<-ggplot(ks_filt,aes(x=state))
+
+lev+geom_bar()
+```
+
+
 First off, we will visualise the main_category variable 
 
 ```{r}
@@ -191,6 +199,8 @@ cat + geom_bar(aes(fill = state), position = "dodge") +
        y = "Count") +
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
+
+might be more appropriate to show proportions within each state (because there are more failed than succcessful observations)
 
 Next, we visualise the duration of the project's funding window
 
@@ -211,11 +221,9 @@ Next is backers
 
 ```{r}
 # couldnt get this to work, will need to come back to it
+back<-ggplot(ks_filt,aes(x=backers))
 
-
-backers <- ggplot(ks_filt, aes(x = backers))
-
-backers + geom_histogram()
+back+geom_histogram()
 
 ```
 
@@ -226,20 +234,19 @@ Here we can see that there is an obviouos outlier, to improve the data, we shoul
 
 max(ks_filt$backers)
 
-ks %>% filter(backers == max(ks_filt$backers))
+ks_filt %>% filter(backers == max(ks_filt$backers))
 
 ```
 
 With further research we can see that this is a valid row (The project was the most backed of all time), for visualisation purposes however, will we remove it from the plot
 
 ```{r}
-# couldnt get this to work, will need to come back to it
+# thought overlaying density might make it clearer (also accounts for differnt proportions)
+back_filt<-ks_filt%>%filter(backers<600)
 
-vis_backers <- ks_filt %>% filter(backers < "50000")
+backers <- ggplot(back_filt, aes(x = backers,fill=state))
 
-filt_backers <- ggplot(vis_backers, aes(x = backers))
-
-filt_backers + geom_histogram()
+backers + geom_density(alpha=.4) 
 
 ```
 
