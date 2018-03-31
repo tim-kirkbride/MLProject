@@ -1,0 +1,14 @@
+TODO List
+
+- Add a visualisation showing the success rate by main category
+
+- Replace histogram with either scatter plot or boxplot
+	- also include multivariate analysis
+
+- Create a pledge per backer variable (total amount pledged/total amount of backers)
+
+- Create a continent variable that will group the countries together
+	- Visualise the raw countries data
+	- Group the countries into continents
+	- Visualise the continents data
+
