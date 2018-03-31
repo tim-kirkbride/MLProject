@@ -200,6 +200,7 @@ cat + geom_bar(aes(fill = state), position = "dodge") +
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
+a
 might be more appropriate to show proportions within each state (because there are more failed than succcessful observations)
 
 Next, we visualise the duration of the project's funding window
@@ -226,6 +227,7 @@ back<-ggplot(ks_filt,aes(x=backers))
 back+geom_histogram()
 
 ```
+
 
 Here we can see that there is an obviouos outlier, to improve the data, we should inspect this row
 
