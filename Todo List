@@ -1,14 +1,20 @@
 TODO List
 
-- Add a visualisation showing the success rate by main category
+- Create a "loading" script that loads in the data and does the basic preprocessing - for josh
 
-- Replace histogram with either scatter plot or boxplot
+- Get rid of year - for josh
+	- maybe create month
+
+- Add a visualisation showing the success rate by main category - done
+
+- Replace duration histogram with either scatter plot or boxplot - tim  
 	- also include multivariate analysis
 
-- Create a pledge per backer variable (total amount pledged/total amount of backers)
+- Create a pledge per backer variable (total amount pledged/total amount of backers) - done
 
-- Create a continent variable that will group the countries together
+- Create a continent variable that will group the countries together - for tim
 	- Visualise the raw countries data
 	- Group the countries into continents
 	- Visualise the continents data
+
 
