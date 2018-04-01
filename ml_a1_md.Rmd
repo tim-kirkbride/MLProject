@@ -105,9 +105,11 @@ From Table 1 and Table 2, it is clear that data has been read in correctly and t
 
 * As mentioned previously, there was a suspected typo in the name of one the levels of the country feature - N,0\".
 
-* Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue later in the analysis. Furthermore, dates will ultimately need to be aggregated to be used in the model.
+* Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue if these columns are needed to created a new variable. Furthermore, as the time dimension is applicable as a feature within the present analysis, these two columns will ultimately need to be dropped.
 
-* The catergory and main_category columns appear to represent the same underlying feature - the type of buisness of the Kickstarter project, however, as seen in Table 2, the cardinality of category is very large at 159 levels compared to that of main_category, which has only 15 levels.
+* The catergory and main_category columns appear to represent the same underlying feature - the type of buisness of the Kickstarter project, however, as seen in Table 2, the cardinality of category was very large at 159 levels compared to that of main_category, which had only 15 levels.
+
+* The currency and country columns seem to hold fairly similar information. As such, dropping one may be necessary. This would need to be investigated visually, however, so will be dealt with in the next section.
 
 * It is clear that all factor columns were defined as the character class when imported and will need be converted.
 
@@ -128,24 +130,17 @@ ks_filt<-ks_filt%>%na.omit()
 
 After this, the number of observations became 331,465.
 
-Next, the launched column would have to be converted to the correct date format. In its current state, launched included not only the date, but also the time at which the project was launched, which has no value in this anlysis. As such, it was converted.
+Next, to was decided that a new feature would be created to represent the duration in days that each project lasted by finding the difference between the two date columns. First, the launched column would have to be converted to the correct date format. In its current state, launched included not only the date, but also the time at which the project was launched. As such, it was converted.
 
 ```{r}
 ks_filt$launched <- format(as.POSIXct(ks_filt$launched,format='%Y/%m/%d %H:%M:%S'),format='%Y/%m/%d')
 ks_filt$launched<-ks_filt$launched%>%as.Date()
 ```
 
-It was then considered beneficial to construct an additional feature from the launched and deadline columns - duration. This feature would represent the time in days the project lasted, and would be calculated as the difference between the launched and deadline columns.
+The duration feature was then added to the dataset by subtracting the launched column from the deadline column. Subseqently, the launched and deadline columns were dropped as they were no longer needed.
 
 ```{r}
 ks_filt$duration<-as.numeric(ks_filt$deadline-ks_filt$launched)
-```
-
-As the dates within the launched and deadline columns are specific to the day, they would not be appropriate for use as a categorical feature as there would be far too many levels. Also, with the addition of the duration feature to the dataset, the deadline feature may no longer be particularly valuable in a model. Considering this, it was decided to replace the launched feautre with two new columns - launched_month and launched_year - which would simply represent the month and year each project was launched, respectively. After this, the launched column would no longer be needed so it was dropped. Additionally, the deadline column would be dropped as its information would be captured by the new launched features and the duration feature.
-
-```{r}
-ks_filt$launched_month<-as.factor(month(ymd(ks_filt$launched)))
-ks_filt$launched_year<-as.factor(year(ymd(ks_filt$launched)))
 ks_filt$launched<-NULL
 ks_filt$deadline<-NULL
 ```
@@ -163,47 +158,105 @@ ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.char
 ```
 
 
-REDUNDANCY BETWEEN COUNTRY AND CURRENCY (REPLACE COUNTRY WITH CONTINENT OR DROP CURRECNY?)
 
-
-### Data Exploration
+# Data Exploration
 
 ## Univariate Visualisations
 
-# Analysis of Goals
-
-Comparison of proportions within the target feature levels
+Initially, the overall counts of succesful and failed projects was examined.
 
 ```{r}
-lev<-ggplot(ks_filt,aes(x=state))
+binary<-ggplot(ks_filt,aes(x=state))
 
-lev+geom_bar()
+binary+geom_bar()+
+  labs(title="Bar Chart of Project States")
 ```
 
+Clearly the main point here is that there were more failed projects in the data than there were sucessful ones. This should be considered in visualisations to come.
 
-First off, we will visualise the main_category variable 
+The main_category feature was then visualised to explore the differences across its levels with regards to the state of the project.
 
 ```{r}
 cat <- ggplot(ks_filt, aes(x = main_category))
 
-cat + geom_bar()
-```
-
-This plot can be improved through adding titles, comparing the successful and failed projects and rotating the axis labels
-
-```{r}
-cat + geom_bar(aes(fill = state), position = "dodge") + 
-  labs(fill = "Outcome",
-       title = "Main Category of Project by Outcome",
-       x = "Main Category",
-       y = "Count") +
+cat + geom_bar()+
+  labs(title = "Bar Chart of Project Category",
+       x = "Category",
+       y = "Count")+
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
-a
-might be more appropriate to show proportions within each state (because there are more failed than succcessful observations)
 
-Next, we visualise the duration of the project's funding window
+```{r}
+cat_state <- table(ks_filt$main_category,ks_filt$state, dnn = c("Category","State"))
+prop.cat_state<-data.frame(prop.table(cat_state,1))
+colnames(prop.cat_state) <- c("Category","State","Proportion")
+
+p5<-ggplot(prop.cat_state,aes(x=Category,y=Proportion,fill=State))
+p5+geom_bar(stat="identity",position="dodge")+
+  labs(title="Proportions of Successful/Failed Projects within Project Catgeories",
+       y="Proportion within Category")+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+Here we see the distribution of the types of projects included in the dataset, as well as the proportions of successful and failed projects within each category. Showing proportions instead of counts allows for direct comparison accross the levels of the main_category feature. This highlights that generally, most categories are associted with failed projects, except for comics, dance, music and theater. Clearly these are all related to the arts.
+
+Next we looked at the currency and country feature simultaniously to determine if either was redundant.
+
+```{r}
+ggplot(ks_filt, aes(x = country)) + geom_bar() +
+  labs(title="Bar Chart of Country",
+       y="Count",
+       x="Country")
+```
+
+```{r}
+ggplot(ks_filt, aes(x = currency)) + geom_bar()+
+  labs(title="Bar Chart of Currency",
+       y="Count",
+       x="Country")
+```
+
+Inspection of these two plots does highlight a striking similarity. Additionally, they also serve to emphasise that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilising either of these features may lead to some issues. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
+
+```{r}
+europe <- c("AT", "BE", "DE", "DK", "ES", "FR", "GB", "IE", "IT", "LU", "NL", "NO", "SE")
+north_america <- c("CA", "MX", "US")
+asia <- c("CH", "HK", "JP", "SG")
+oceania <- c("AU", "NZ")
+
+ks_filt$continent <- case_when(
+  ks_filt$country %in% europe ~ "Europe",
+  ks_filt$country %in% north_america ~ "North America",
+  ks_filt$country %in% asia ~ "Asia",
+  ks_filt$country %in% oceania ~ "Oceania"
+)
+
+ks_filt$country<-NULL
+ks_filt$currency<-NULL
+```
+```{r}
+cont <- ggplot(ks_filt, aes(x = continent))
+
+cont + geom_bar(position = "dodge")+
+  labs(title="Bar Chart of Continent",
+       y="Count",
+       x="Continent")
+```
+
+Obviously, this chart still shows that North America dominates the projects being assessed, however the other levels are now more concentrated. Despite this, the amount of projects originating from Asia and Oceania remains very small.
+
+```{r}
+cont_state <- table(ks_filt$continent,ks_filt$state, dnn = c("Continent","State"))
+prop.cont_state<-data.frame(prop.table(cont_state,1))
+colnames(prop.cont_state) <- c("Continent","State","Proportion")
+
+p6<-ggplot(prop.cont_state,aes(x=Continent,y=Proportion,fill=State))
+p6+geom_bar(stat="identity",position="dodge")+
+  labs(title="Proportions of Successful/Failed Projects within Project Continents")
+```
+
+From the chart above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
 ```{r}
 g <- ggplot(ks_filt, aes(x = duration))
