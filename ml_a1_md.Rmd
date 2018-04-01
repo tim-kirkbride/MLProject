@@ -271,4 +271,9 @@ filt_goal + geom_histogram()
 
 filt_goal + geom_histogram(aes(fill = state)) +
 facet_grid(~state)
+
+filt_goal + geom_density(aes(fill = state)) +
+  facet_grid(~state)
+
+filt_goal + geom_density(aes(fill = state), alpha = 0.4)
 ```

@@ -1,4 +1,7 @@
+install.packages("gridExtra")
+
 library(dplyr)
+library(gridExtra)
 
 ks_filt <- ks_filt %>% mutate(
   pledge_per_backer = usd_pledged_real / backers
@@ -15,9 +18,15 @@ students$entity <- case_when(
   TRUE ~ 'RMIT_University'
 )
 
-countries <- ggplot(ks_filt, aes(x = country))
+countries <- ggplot(ks_filt, aes(x = country))+
+  geom_bar()
 
 countries + geom_bar()
+
+currency <- ggplot(ks_filt, aes(x = currency)) +
+  geom_bar()
+
+currency + geom_bar()
 
 europe <- c("AT", "BE", "DE", "DK", "ES", "FR", "GB", "IE", "IT", "LU", "NL", "NO", "SE")
 north_america <- c("CA", "MX", "US")
@@ -34,3 +43,5 @@ ks_filt$continent <- case_when(
 cont <- ggplot(ks_filt, aes(x = continent))
 
 cont + geom_bar(aes(fill = state), position = "dodge")
+
+grid.arrange(countries, currency, ncol = 1)
