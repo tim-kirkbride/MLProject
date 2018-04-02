@@ -258,70 +258,96 @@ p6+geom_bar(stat="identity",position="dodge")+
 
 From the chart above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
+####
+
 ```{r}
-g <- ggplot(ks_filt, aes(x = duration))
+p7 <- ggplot(ks_filt, aes(x = duration))
+p7+geom_histogram()+
+  labs(title="Histogram of Project Duration",
+       x="Duration",
+       y="Count")
+```
 
-#g + geom_histogram()
 
-g + geom_histogram(aes(fill = state)) + 
-labs(title = "Duration of Project, by Outcome",
+
+```{r}
+p8 <- ggplot(ks_filt, aes(x = duration))
+
+p8 + geom_histogram(aes(fill = state)) + 
+labs(title = "Histogram of Project Duration by State",
 x = "Duration",
 y = "Count",
-fill = "Outcome") +
+fill = "State") +
 facet_grid(~state)
 ```
 
 Next is backers
 
 ```{r}
-# couldnt get this to work, will need to come back to it
-back<-ggplot(ks_filt,aes(x=backers))
+back_filt<-ks_filt%>%filter(backers<150)
 
-back+geom_histogram()
-
+p9<-ggplot(back_filt,aes(x=backers))
+p9+geom_histogram()+ 
+labs(title = "Histogram of Project Backers",
+x = "Backers",
+y = "Count")
 ```
 
-
-Here we can see that there is an obviouos outlier, to improve the data, we should inspect this row
 
 ```{r}
-# couldnt get this to work, will need to come back to it
+p10 <- ggplot(back_filt, aes(x = backers,fill=state))
 
-max(ks_filt$backers)
-
-ks_filt %>% filter(backers == max(ks_filt$backers))
-
+p10 + geom_density(alpha=.4) + 
+labs(title = "Density of Project Backers by State",
+x = "Backers",
+y = "Density",
+fill = "State")
 ```
 
-With further research we can see that this is a valid row (The project was the most backed of all time), for visualisation purposes however, will we remove it from the plot
-
-```{r}
-# thought overlaying density might make it clearer (also accounts for differnt proportions)
-back_filt<-ks_filt%>%filter(backers<600)
-
-backers <- ggplot(back_filt, aes(x = backers,fill=state))
-
-backers + geom_density(alpha=.4) 
-
-```
 
 usd_goal_real
 
 ```{r}
-goal <- ggplot(ks_filt, aes(x = usd_goal_real))
-
-goal + geom_histogram()
-```
-
-Filtering the data 
-
-```{r}
 ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 
-filt_goal <- ggplot(ks_goal, aes(x = usd_goal_real))
+p11 <- ggplot(ks_goal, aes(x = usd_goal_real))
 
-filt_goal + geom_density(aes(fill = state)) +
-  facet_grid(~state)
-
-filt_goal + geom_density(aes(fill = state), alpha = 0.4)
+p11 + geom_histogram() + 
+labs(title = "Histogram of Project Goal (USD) by State",
+x = "Goal",
+y = "Count")
 ```
+
+
+```{r}
+p11+ geom_density(aes(fill = state), alpha = 0.4)+ 
+labs(title = "Density of Project Goal (USD) by State",
+x = "Goal (USD)",
+y = "Density",
+fill = "State")
+```
+
+Pledged
+
+```{r}
+pledge_filt<-ks_filt%>%filter(usd_pledged_real<4000)
+
+p12 <- ggplot(pledge_filt, aes(x = usd_pledged_real))
+
+p12 + geom_histogram()+ 
+labs(title = "Histogram of Amount Pledged to Project (USD)",
+x = "Amount Pledged (USD)",
+y = "Count")
+
+```
+
+```{r}
+p13 <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
+
+p13 + geom_density(alpha=.4) + 
+labs(title = "Density of Amount Pledged to Project (USD) by State",
+x = "Amount Pledged (USD)",
+y = "Density",
+fill = "State")
+```
+
