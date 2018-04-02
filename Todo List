@@ -1,20 +1,10 @@
 TODO List
 
-- Create a "loading" script that loads in the data and does the basic preprocessing - for josh
+- Visualise backers with a limited dataset (remove outliers) - Tim
 
-- Get rid of year - for josh
-	- maybe create month
+- Density plot for pledged - Josh
 
-- Add a visualisation showing the success rate by main category - done
+- Add title and labels etc. for histogram faceted by main_category - Tim
 
-- Replace duration histogram with either scatter plot or boxplot - tim  
-	- also include multivariate analysis
-
-- Create a pledge per backer variable (total amount pledged/total amount of backers) - done
-
-- Create a continent variable that will group the countries together - for tim
-	- Visualise the raw countries data
-	- Group the countries into continents
-	- Visualise the continents data
-
+- Multivariate across continents
 
