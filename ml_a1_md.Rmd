@@ -316,14 +316,9 @@ goal + geom_histogram()
 Filtering the data 
 
 ```{r}
-ks_goal <- ks_filt %>% filter(usd_goal_real <= 10000)
+ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 
 filt_goal <- ggplot(ks_goal, aes(x = usd_goal_real))
-
-filt_goal + geom_histogram()
-
-filt_goal + geom_histogram(aes(fill = state)) +
-facet_grid(~state)
 
 filt_goal + geom_density(aes(fill = state)) +
   facet_grid(~state)

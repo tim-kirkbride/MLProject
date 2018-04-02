@@ -1,3 +1,10 @@
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(mlr)
+library(lubridate)
+#getwd()
+#setwd("/home/tim/MLProject/")
 ks <- read_csv("ks-projects-201801.csv")
 ks_filt<-ks%>%filter(state %in% c("successful","failed"))
 ks_filt$ID<-NULL

@@ -45,3 +45,10 @@ cont <- ggplot(ks_filt, aes(x = continent))
 cont + geom_bar(aes(fill = state), position = "dodge")
 
 grid.arrange(countries, currency, ncol = 1)
+
+set.seed(1000)
+ks_rand <- sample_n(ks_filt, size = 1000)
+
+mvsct <- ggplot(ks_rand, aes(x = duration, y = usd_goal_real))
+
+mvsct + geom_point(aes(fill = state))
