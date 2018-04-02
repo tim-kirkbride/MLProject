@@ -7,9 +7,7 @@ ks_pledged<-ks_filt%>%filter(usd_pledged_real<5000)
 p1<-ggplot(ks_pledged,aes(x=usd_pledged_real,fill=state))
 p1+geom_density(alpha=.4)
 
-#currency
-p2<-ggplot(ks_pledged,aes(x=currency,y=usd_pledged_real,fill=state))
-p2+geom_boxplot()
+
 
 #time (should remove year)
 p3<-ggplot(ks_filt,aes(x=launched_month,fill=state))
@@ -39,6 +37,42 @@ colnames(prop.cont_state) <- c("Continent","State","Proportion")
 p6<-ggplot(prop.cont_state,aes(x=Continent,y=Proportion,fill=State))
 p6+geom_bar(stat="identity",position="dodge")+
   labs(title="Proportions of Successful/Failed Projects within Project Continents")
+
+#backers
+back_filt<-ks_filt%>%filter(backers<150)
+
+backers <- ggplot(back_filt, aes(x = backers,fill=state))
+
+backers + geom_density(alpha=.4) 
+
+p7<-ggplot(back_filt,aes(x=backers))
+p7+geom_histogram()
+
+#pledged
+
+pledge_filt<-ks_filt%>%filter(usd_pledged_real<4000)
+
+pledged <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
+
+pledged + geom_density(alpha=.4) 
+
+#big box
+pledge_filt2<-ks_filt%>%filter(usd_pledged_real<7500)
+p13<-ggplot(pledge_filt2,aes(x=continent,y=usd_pledged_real,fill=state))
+p13+geom_boxplot()+
+  labs(title = "Boxplot of Amount Pledged (USD) by Project State and Continent",
+       x="Continent",
+       y="Amount Pledged (USD)")
+
+###
+
+p13 <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
+
+p13 + geom_histogram() + 
+  labs(title = "Density of Amount Pledged to Project (USD) by State",
+       x = "Amount Pledged (USD)",
+       y = "Density",
+       fill = "State")
 
 
 

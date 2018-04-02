@@ -351,3 +351,40 @@ y = "Density",
 fill = "State")
 ```
 
+## Multivariate Visualisations
+
+```{r}
+p14<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
+
+p14 + geom_histogram() + facet_wrap(~main_category)+
+  labs(title = "Project Goal (USD) by State across Category",
+       x="Goal (USD)",
+       y="Count")
+```
+
+```{r}
+pledge_filt2<-ks_filt%>%filter(usd_pledged_real<7500)
+p13<-ggplot(pledge_filt2,aes(x=continent,y=usd_pledged_real,fill=state))
+p13+geom_boxplot()+
+  labs(title = "Boxplot of Amount Pledged by Project State and Continent",
+       x="Continent",
+       y="Amount Pledged (USD)")
+```
+
+```{r}
+ks_scatter<-ks_filt%>%filter(backers < 10000)
+ks_scatter<-ks_scatter%>%filter(usd_pledged_real < 1000000)
+
+set.seed(90)
+index <- sample(1:nrow(ks_scatter), 5000)
+ks_rand<-ks_scatter[index, ]
+
+backers_pledged <- ggplot(ks_rand, aes(x = backers, y = usd_pledged_real,alpha=.1))
+
+backers_pledged + geom_point(aes(colour = state,size=usd_goal_real))+
+  labs(title="Project State by Amount Pledged to Project, Backers and Goal",
+       y="Amount Pledged (USD)",
+       x="Backers")
+
+```
+
