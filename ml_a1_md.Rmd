@@ -128,8 +128,6 @@ Here, we see that the proprotion of complete cases is very high, at 99.94% of al
 ks_filt<-ks_filt%>%na.omit()
 ```
 
-After this, the number of observations became 331,465.
-
 Next, to was decided that a new feature would be created to represent the duration in days that each project lasted by finding the difference between the two date columns. First, the launched column would have to be converted to the correct date format. In its current state, launched included not only the date, but also the time at which the project was launched. As such, it was converted.
 
 ```{r}
@@ -157,7 +155,7 @@ Finally, all features loaded in as the character type were converted to factors.
 ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.character)], as.factor)
 ```
 
-
+As a result of all the above amendments, the dataset now contained 331,465 observations, 1 target feature with two levels and 6 feature variables.
 
 # Data Exploration
 
@@ -166,10 +164,12 @@ ks_filt[sapply(ks_filt, is.character)] <- lapply(ks_filt[sapply(ks_filt, is.char
 Initially, the overall counts of succesful and failed projects was examined.
 
 ```{r}
-binary<-ggplot(ks_filt,aes(x=state))
+p1<-ggplot(ks_filt,aes(x=state))
 
-binary+geom_bar()+
-  labs(title="Bar Chart of Project States")
+p1+geom_bar()+
+  labs(title="Figure 1. Bar Chart of Project State",
+       y="Count",
+       x="State")
 ```
 
 Clearly the main point here is that there were more failed projects in the data than there were sucessful ones. This should be considered in visualisations to come.
@@ -177,10 +177,10 @@ Clearly the main point here is that there were more failed projects in the data 
 The main_category feature was then visualised to explore the differences across its levels with regards to the state of the project.
 
 ```{r}
-cat <- ggplot(ks_filt, aes(x = main_category))
+p2 <- ggplot(ks_filt, aes(x = main_category))
 
-cat + geom_bar()+
-  labs(title = "Bar Chart of Project Category",
+p2 + geom_bar()+
+  labs(title = "Figure 2. Bar Chart of Project Category",
        x = "Category",
        y = "Count")+
   theme(axis.text.x=element_text(angle=45, hjust=1))
@@ -192,32 +192,32 @@ cat_state <- table(ks_filt$main_category,ks_filt$state, dnn = c("Category","Stat
 prop.cat_state<-data.frame(prop.table(cat_state,1))
 colnames(prop.cat_state) <- c("Category","State","Proportion")
 
-p5<-ggplot(prop.cat_state,aes(x=Category,y=Proportion,fill=State))
-p5+geom_bar(stat="identity",position="dodge")+
-  labs(title="Proportions of Successful/Failed Projects within Project Catgeories",
+p3<-ggplot(prop.cat_state,aes(x=Category,y=Proportion,fill=State))
+p3+geom_bar(stat="identity",position="dodge")+
+  labs(title="Figure 3. Proportions of Project State within Catgeories",
        y="Proportion within Category")+
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
 Here we see the distribution of the types of projects included in the dataset, as well as the proportions of successful and failed projects within each category. Showing proportions instead of counts allows for direct comparison accross the levels of the main_category feature. This highlights that generally, most categories are associted with failed projects, except for comics, dance, music and theater. Clearly these are all related to the arts.
 
-Next we looked at the currency and country feature simultaniously to determine if either was redundant.
+Next we looked at the currency and country feature simultaniously to determine if either was any redundancy.
 
 ```{r}
 ggplot(ks_filt, aes(x = country)) + geom_bar() +
-  labs(title="Bar Chart of Country",
+  labs(title="Figure 4. Bar Chart of Country",
        y="Count",
        x="Country")
 ```
 
 ```{r}
 ggplot(ks_filt, aes(x = currency)) + geom_bar()+
-  labs(title="Bar Chart of Currency",
+  labs(title="Figure 5. Bar Chart of Currency",
        y="Count",
        x="Country")
 ```
 
-Inspection of these two plots does highlight a striking similarity. Additionally, they also serve to emphasise that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilising either of these features may lead to some issues. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
+Inspection of Figures 4 and 5 does highlight a striking similarity. Additionally, they also serve to emphasise that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilising either of these features may lead to some issues. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
 
 ```{r}
 europe <- c("AT", "BE", "DE", "DK", "ES", "FR", "GB", "IE", "IT", "LU", "NL", "NO", "SE")
@@ -236,116 +236,118 @@ ks_filt$country<-NULL
 ks_filt$currency<-NULL
 ```
 ```{r}
-cont <- ggplot(ks_filt, aes(x = continent))
+p4 <- ggplot(ks_filt, aes(x = continent))
 
-cont + geom_bar(position = "dodge")+
-  labs(title="Bar Chart of Continent",
+p4 + geom_bar(position = "dodge")+
+  labs(title="Figure 6. Bar Chart of Continent",
        y="Count",
        x="Continent")
 ```
 
-Obviously, this chart still shows that North America dominates the projects being assessed, however the other levels are now more concentrated. Despite this, the amount of projects originating from Asia and Oceania remains very small.
+Obviously, this Figure 5 still shows that North America dominates the projects being assessed, however the other levels are now more concentrated. Despite this, the amount of projects originating from Asia and Oceania remains very small.
 
 ```{r}
 cont_state <- table(ks_filt$continent,ks_filt$state, dnn = c("Continent","State"))
 prop.cont_state<-data.frame(prop.table(cont_state,1))
 colnames(prop.cont_state) <- c("Continent","State","Proportion")
 
-p6<-ggplot(prop.cont_state,aes(x=Continent,y=Proportion,fill=State))
-p6+geom_bar(stat="identity",position="dodge")+
-  labs(title="Proportions of Successful/Failed Projects within Project Continents")
+p5<-ggplot(prop.cont_state,aes(x=Continent,y=Proportion,fill=State))
+p5+geom_bar(stat="identity",position="dodge")+
+  labs(title="Figure 6. Proportions of Project State within Continent")
 ```
 
-From the chart above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
+From the Figure 6 above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
-####
-
+The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects duration. This will need to further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include.
 ```{r}
-p7 <- ggplot(ks_filt, aes(x = duration))
-p7+geom_histogram()+
-  labs(title="Histogram of Project Duration",
+p6 <- ggplot(ks_filt, aes(x = duration))
+p6+geom_histogram()+
+  labs(title="Figure 7. Histogram of Project Duration",
        x="Duration",
        y="Count")
 ```
 
 
-
 ```{r}
-p8 <- ggplot(ks_filt, aes(x = duration))
+p7 <- ggplot(ks_filt, aes(x = duration))
 
-p8 + geom_histogram(aes(fill = state)) + 
-labs(title = "Histogram of Project Duration by State",
+p7 + geom_histogram(aes(fill = state)) + 
+labs(title = "Figure 8. Histogram of Project Duration by State",
 x = "Duration",
 y = "Count",
 fill = "State") +
 facet_grid(~state)
 ```
 
-Next is backers
+Figure 9 below depicts the number of backers each projects had and shows a clear positive skew. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects more associted with zero backers, and successful ones having much more varience. 
+It should be noted that to best visualise backers, higher values were filtered out. 
 
 ```{r}
 back_filt<-ks_filt%>%filter(backers<150)
 
-p9<-ggplot(back_filt,aes(x=backers))
-p9+geom_histogram()+ 
-labs(title = "Histogram of Project Backers",
+p8<-ggplot(back_filt,aes(x=backers))
+p8+geom_histogram()+ 
+labs(title = "Figure 9. Histogram of Project Backers",
 x = "Backers",
 y = "Count")
 ```
 
 
 ```{r}
-p10 <- ggplot(back_filt, aes(x = backers,fill=state))
+p9 <- ggplot(back_filt, aes(x = backers,fill=state))
 
-p10 + geom_density(alpha=.4) + 
-labs(title = "Density of Project Backers by State",
+p9 + geom_density(alpha=.4) + 
+labs(title = "Figure 10. Density of Project Backers by State",
 x = "Backers",
 y = "Density",
 fill = "State")
 ```
 
 
-usd_goal_real
+Each project's goal was visualised in Figures 11 and 12. Figure 11 highlights an unsual distribution with spikes at every $5000. This may be attributable to indivduals commonly setting goals at these essentially arbitrary points.
+Figure 12 highlights an interesting insight which suggests that projects with lower goals are more likely to be successful than projects with higher goals, with the threshold level at approximately $4000. This makes intuitive sense as smaller goals would be more easily achieved, which would then classify the project as successful.
+Again, observations with very large goals were fitlered out to best visualise the feature.
 
 ```{r}
 ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 
-p11 <- ggplot(ks_goal, aes(x = usd_goal_real))
+p10 <- ggplot(ks_goal, aes(x = usd_goal_real))
 
-p11 + geom_histogram() + 
-labs(title = "Histogram of Project Goal (USD) by State",
+p10 + geom_histogram() + 
+labs(title = "Figure 11. Histogram of Project Goal by State",
 x = "Goal",
 y = "Count")
 ```
 
 
 ```{r}
-p11+ geom_density(aes(fill = state), alpha = 0.4)+ 
-labs(title = "Density of Project Goal (USD) by State",
+p10+ geom_density(aes(fill = state), alpha = 0.4)+ 
+labs(title = "Figure 12. Density of Project Goal by State",
 x = "Goal (USD)",
 y = "Density",
 fill = "State")
 ```
 
-Pledged
+The amount pledged to each project is visualised below in Figures 13 and 14. Here, there is a striking similarity to the visualisations of the backers feature shown in Figures 9 and 10. Again, the overall distribution is highly positively skewed, with the majority of failed projects recieving very little fudning, while the amount pledged to successful projects has considerable variablity.
+The data used in this visualisation was once again filtered of extreme values.
 
 ```{r}
 pledge_filt<-ks_filt%>%filter(usd_pledged_real<4000)
 
-p12 <- ggplot(pledge_filt, aes(x = usd_pledged_real))
+p11 <- ggplot(pledge_filt, aes(x = usd_pledged_real))
 
-p12 + geom_histogram()+ 
-labs(title = "Histogram of Amount Pledged to Project (USD)",
+p11 + geom_histogram()+ 
+labs(title = "Figure 13. Histogram of Amount Pledged to Project",
 x = "Amount Pledged (USD)",
 y = "Count")
 
 ```
 
 ```{r}
-p13 <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
+p12 <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
 
-p13 + geom_density(alpha=.4) + 
-labs(title = "Density of Amount Pledged to Project (USD) by State",
+p12 + geom_density(alpha=.4) + 
+labs(title = "Figure 14. Density of Amount Pledged to Project by State",
 x = "Amount Pledged (USD)",
 y = "Density",
 fill = "State")
@@ -353,23 +355,28 @@ fill = "State")
 
 ## Multivariate Visualisations
 
-```{r}
-p14<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
+Figure 15 below highlights the relationship between a project's goal and its category. Inspection of the different facets emphasises that while setting smaller goals is generally likely to result in a succesful project, this is not true for all categories. Categories such as food, design and technology do not strickly adhere to this rule and demonstrate relatively high amounts of successful projects at higher goals. Other categories such as dance, comics and theatre are also different in that they seem to have high proportions of successful projects regardless of the goal.
 
-p14 + geom_histogram() + facet_wrap(~main_category)+
-  labs(title = "Project Goal (USD) by State across Category",
+```{r}
+p13<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
+
+p13 + geom_histogram() + facet_wrap(~main_category)+
+  labs(title = "Figure 15. Project Goal by State across Category",
        x="Goal (USD)",
        y="Count")
 ```
 
+
 ```{r}
 pledge_filt2<-ks_filt%>%filter(usd_pledged_real<7500)
-p13<-ggplot(pledge_filt2,aes(x=continent,y=usd_pledged_real,fill=state))
-p13+geom_boxplot()+
-  labs(title = "Boxplot of Amount Pledged by Project State and Continent",
+p14<-ggplot(pledge_filt2,aes(x=continent,y=usd_pledged_real,fill=state))
+p14+geom_boxplot()+
+  labs(title = "Figure 16. Boxplot of Amount Pledged by Project State and Continent",
        x="Continent",
        y="Amount Pledged (USD)")
 ```
+
+The amount pledged to a project acroding to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that there are many outliers in the failed state, which despite receiving considerable funding still failed. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
 
 ```{r}
 ks_scatter<-ks_filt%>%filter(backers < 10000)
@@ -379,12 +386,15 @@ set.seed(90)
 index <- sample(1:nrow(ks_scatter), 5000)
 ks_rand<-ks_scatter[index, ]
 
-backers_pledged <- ggplot(ks_rand, aes(x = backers, y = usd_pledged_real,alpha=.1))
+p15 <- ggplot(ks_rand, aes(x = backers, y = usd_pledged_real))
 
-backers_pledged + geom_point(aes(colour = state,size=usd_goal_real))+
-  labs(title="Project State by Amount Pledged to Project, Backers and Goal",
+p15 + geom_point(aes(colour = state,size=usd_goal_real),alpha=.3)+
+  facet_wrap(~state)+
+  labs(title="Figure 17. Project State by Amount Pledged to Project, Backers and Goal",
        y="Amount Pledged (USD)",
        x="Backers")
 
 ```
 
+There are several interesting points to note about Figure 17. Firstly, it clear in both facets that a large concentration of projects received litting funding and had few backers. This is espeically true of failed projects, which are mostly concetrated around the origin. Visually, this gives off the sense that the failed facet has fewer points, when in fact failed projects were more common than succesful ones. The succesful projects are much more spread out and suggest a moderate postiive relationship between backers and amount pledged. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. The goals of failed projects also appear to be considerably larger than those of the successful ones, especially at the origin of the failed facet. As previously mentioned, this would suggest that perhaps these projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach thir targets and become successful.
+This plot was constructed using a random sample from the dataset.
