@@ -53,11 +53,14 @@ mvsct <- ggplot(ks_rand, aes(x = duration, y = usd_goal_real))
 
 mvsct + geom_point(aes(colour = state))
 
-p2<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
+goal_cat <- ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
 
 ## To be included in the final submission, 
 ## just need to add title, labels etc.
-p2+geom_histogram() +
+goal_cat + geom_histogram() +
+  labs(title = "Histogram of Goal in $US by Category",
+       x = "Real USD Goal",
+       y = "Count") +
   facet_wrap(~main_category)
 
 p2 + geom_density(alpha = 0.4) +
