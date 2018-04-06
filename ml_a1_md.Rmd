@@ -259,7 +259,8 @@ p5+geom_bar(stat="identity",position="dodge")+
 
 From the Figure 6 above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
-The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days and this means that as most projects have the same value. Therefore, the feature essentially becomes useless as there is very little variation. This will need to further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include. 
+The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days and this means that as most projects have the same value. Therefore, the feature essentially becomes useless as there is very little variation. This will need to further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include.
+
 ```{r}
 p6 <- ggplot(ks_filt, aes(x = duration))
 p6+geom_histogram()+
@@ -312,10 +313,9 @@ Again, observations with very large goals were fitlered out to best visualise th
 ```{r}
 ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 
-p10 <- ggplot(ks_goal, aes(x = usd_goal_real, fill = state))
+p10 <- ggplot(ks_goal, aes(x = usd_goal_real))
 
 p10 + geom_histogram() + 
-  facet_wrap(~state)+ 
 labs(title = "Figure 11. Histogram of Project Goal by State",
 x = "Goal",
 y = "Count")
@@ -399,7 +399,7 @@ p15 + geom_point(aes(colour = state,size=usd_goal_real),alpha=.3)+
 
 ```
 
-There are several interesting points to note about Figure 17. Unsurprisingly, failed projects can be seen to be highly concertrated around teh origin, suggesting they received little funding and backers. Visually, this gives off the sense that the failed facet has fewer points, when in fact failed projects were more common than succesful ones. The successful projects are much more spread out and suggest a moderate postiive relationship between backers and amount pledged. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive few backers and and moderate funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident amoung failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
+There are several interesting points to note about Figure 17. Unsurprisingly, failed projects can be seen to be highly concertrated around the origin, suggesting they received little funding and backers. Visually, this gives off the sense that the failed facet has fewer points, when in fact failed projects were more common than succesful ones. The successful projects are much more spread out and suggest a moderate, postiive relationship between backers and amount pledged. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive few backers and and moderate funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident among failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
 This plot was constructed using a random sample from the dataset with extreme values filtered from the backers and usd_pledged_real features.
 
 # Summary
