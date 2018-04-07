@@ -15,7 +15,7 @@ library(lubridate)
 
 ## Introduction
 
-This project aimed to construct a classification model to predict whether a Kickstarter project will be successful or fail. The project is split into two phases. Phase 1 will focus on data preprocessing and exploration and will be covered in this report, while Phase 2 will be concered with model building and validation and will be covered in a later report. In this phase, the dataset and its attrbiutes will be unpacked and described. The data will then be cleaned and preprocessed. Finally, all relevant attrbiutes will be explored with regards to their relationships with each other.
+This project aimed to construct a classification model to predict whether a Kickstarter project will be successful or fail. The project is split into two phases. Phase 1 will focus on data preprocessing and exploration and will be covered in this report, while Phase 2 will be concerned with model building and validation and will be covered in a later report. In this phase, the dataset and its attrbiutes will be unpacked and described. The data will then be cleaned and preprocessed. Finally, all relevant attributes will be explored with regards to their relationships with each other.
 
 ## Dataset
 
@@ -30,11 +30,11 @@ https://www.kaggle.com/kemical/kickstarter-projects/data
 This project used the 2018 dataset, which contained the more recently updated data. The dataset contained 378,661 observations, each corresponding to a different Kickstarter project launched between 2009-2018. The dataset consisted of 14 feature variables and one target variable. 
 
 
-### Target Feautre
+### Target Feature
 
 The target feature used in this analysis was the state of the project at the time of its deadline. The levels of the target variable are denoted as follows:
 
-* Canceled: If the project was cancelled premature to its deadline
+* Canceled: If the project was canceled premature to its deadline
 
 * Failed: If the project was unable to generate its goal amount by the time of its deadline
 
@@ -42,11 +42,11 @@ The target feature used in this analysis was the state of the project at the tim
 
 * Successful: If the project was able to at least generate its goal amount by the time of its deadline
 
-* Suspended: If the project is found to be in breech of the Kickstarter rules, all funding for the project stops indefintely and all previous pledges are cancelled
+* Suspended: If the project is found to be in breech of the Kickstarter rules, all funding for the project stops indefinitely and all previous pledges are canceled
 
 * Undefined: If it is unknown which of the above categories is most appropriate
 
-While the target feature was originally comprised of six classes, the present analysis was only concerned with predicting whether a Kickstarter project will be successful or fail. Furthermore, all of the observations which related to the four other target levels combined only comprised a minority of the overall observations (10.91%). As such, it was decided that observations classifed under the levels of live, canceled, suspended or undefined would not be considered in the analysis, and only observations relating to successful or failed projects would be retained.
+While the target feature was originally comprised of six classes, the present analysis was only concerned with predicting whether a Kickstarter project will be successful or fail. Furthermore, all of the observations which related to the four other target levels combined only comprised a minority of the overall observations (10.91%). As such, it was decided that observations classified under the levels of live, canceled, suspended or undefined would not be considered in the analysis, and only observations relating to successful or failed projects would be retained.
 
 ```{r}
 ks_filt<-ks%>%filter(state %in% c("successful","failed"))
@@ -71,7 +71,7 @@ As as result of this, the dataset now contained 331,675 observations relating on
 * us_pledged_real: continuous
 * us_goal_real: continuous
 
-Many of the descriptive features here are self-explanatory. The last three features are corrections of the pledged and goal features, which convert the relevant currency amounts of the associated observations to USD. Information from the website where the dataset was retrieved suggests that usd_pledged was created to standardise the pledged column to USD, but there were issues with the conversion which resulted in errors. The usd_pledged_real feature amended these errors and has the correct amount pledged in USD. Similarly, the feature usd_goal_real has the USD amount of the project's goal.
+Many of the descriptive features here are self-explanatory. The last three features are corrections of the pledged and goal features, which convert the relevant currency amounts of the associated observations to USD. Information from the website where the dataset was retrieved suggests that usd_pledged was created to standardize the pledged column to USD, but there were issues with the conversion which resulted in errors. The usd_pledged_real feature amended these errors and has the correct amount pledged in USD. Similarly, the feature usd_goal_real has the USD amount of the project's goal.
 
 Inspection of the levels of the country feature highlight a potential typo, where a country was assigned the code 'N,0\"', which clearly does not correspond with the rest of the levels. This will be examined further in the next section of this report.
 
@@ -79,7 +79,7 @@ Inspection of the levels of the country feature highlight a potential typo, wher
 
 ### Initial Inspection and Error Identification
 
-Prior to summarization, some obviously redundant columns were removed. The features ID and name would clearly add no value in predicting the target variable and were dropped. Additionally, as the columns usd_goal_real and usd_pledged_real contained the correct standardised goal and pledged amounts respectively, the pledged, goal and usd_pledged features were no longer relevant and so were dropped.
+Prior to summarization, some obviously redundant columns were removed. The features ID and name would clearly add no value in predicting the target variable and were dropped. Additionally, as the columns usd_goal_real and usd_pledged_real contained the correct standardized goal and pledged amounts respectively, the pledged, goal and usd_pledged features were no longer relevant and so were dropped.
 
 ```{r}
 ks_filt$ID<-NULL
@@ -122,7 +122,7 @@ ks_filt$country <- ifelse(ks_filt$country == "N,0\"", NA, ks_filt$country)
 sum(complete.cases(ks_filt))/nrow(ks_filt)
 ```
 
-Here, we see that the proprotion of complete cases is very high, at 99.94% of all observations. This suggested that the number of observations affected by the typo was minimal and as such, it was deemed appropriate to omit all affected observations from the analysis.
+Here, we see that the proportion of complete cases is very high, at 99.94% of all observations. This suggested that the number of observations affected by the typo was minimal and as such, it was deemed appropriate to omit all affected observations from the analysis.
 
 ```{r}
 ks_filt<-ks_filt%>%na.omit()
@@ -135,7 +135,7 @@ ks_filt$launched <- format(as.POSIXct(ks_filt$launched,format='%Y/%m/%d %H:%M:%S
 ks_filt$launched<-ks_filt$launched%>%as.Date()
 ```
 
-The duration feature was then added to the dataset by subtracting the launched column from the deadline column. Subseqently, the launched and deadline columns were dropped as they were no longer needed.
+The duration feature was then added to the dataset by subtracting the launched column from the deadline column. Subsequently, the launched and deadline columns were dropped as they were no longer needed.
 
 ```{r}
 ks_filt$duration<-as.numeric(ks_filt$deadline-ks_filt$launched)
@@ -159,7 +159,7 @@ As a result of all the above amendments, the dataset now contained 331,465 obser
 
 # Data Exploration
 
-## Univariate Visualisations
+## Univariate Visualizations
 
 Initially, the overall counts of successful and failed projects was examined.
 
@@ -172,9 +172,9 @@ p1+geom_bar()+
        x="State")
 ```
 
-Clearly the main point here is that there were more failed projects in the data than there were sucessful ones. This was considered in visualisations to come.
+Clearly the main point here is that there were more failed projects in the data than there were successful ones. This was considered in visualizations to come.
 
-The main_category feature was then visualised to explore the differences in counts across its levels, as well as the proportions of successful and failed projects within its levels.
+The main_category feature was then visualized to explore the differences in counts across its levels, as well as the proportions of successful and failed projects within its levels.
 
 ```{r}
 p2 <- ggplot(ks_filt, aes(x = main_category))
@@ -194,14 +194,14 @@ colnames(prop.cat_state) <- c("Category","State","Proportion")
 
 p3<-ggplot(prop.cat_state,aes(x=Category,y=Proportion,fill=State))
 p3+geom_bar(stat="identity",position="dodge")+
-  labs(title="Figure 3. Proportions of Project State within Catgeories",
+  labs(title="Figure 3. Proportions of Project State within Categories",
        y="Proportion within Category")+
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
-From Figure 2, it can be seen that projects based on film and video as well as music were popular, while dance and journalism based projects were less common. Furthermore, Figure 3 highlights that generally, most categories are associted with failed projects, except for comics, dance, music and theater. Clearly these are all related to the arts.
+From Figure 2, it can be seen that projects based on film and video as well as music were popular, while dance and journalism based projects were less common. Furthermore, Figure 3 highlights that generally, most categories are associated with failed projects, except for comics, dance, music and theater. Clearly these are all related to the arts.
 
-Next we looked at the currency and country feature simultaniously to identify any redundancy.
+Next we looked at the currency and country feature simultaneously to identify any redundancy.
 
 ```{r}
 ggplot(ks_filt, aes(x = country)) + geom_bar() +
@@ -217,7 +217,7 @@ ggplot(ks_filt, aes(x = currency)) + geom_bar()+
        x="Country")
 ```
 
-Inspection of Figures 4 and 5 does highlight a striking similarity. Additionally, they also serve to emphasise that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilising either of these features may lead to some issues with regards to disproportional levels. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
+Inspection of Figures 4 and 5 does highlight a striking similarity. Additionally, they also serve to emphasize that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilizing either of these features may lead to some issues with regards to disproportional levels. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
 
 ```{r}
 europe <- c("AT", "BE", "DE", "DK", "ES", "FR", "GB", "IE", "IT", "LU", "NL", "NO", "SE")
@@ -306,7 +306,7 @@ fill = "State")
 ```
 
 
-Each project's goal was visualised in Figures 11 and 12. Figure 11 highlights an unsual distribution with spikes at every $5000. This may be attributable to indivduals commonly setting goals at these essentially arbitrary points.
+Each project's goal was visualised in Figures 11 and 12. Figure 11 highlights an unsual distribution with spikes at every $5000. This may be attributable to individuals commonly setting goals at these essentially arbitrary points.
 Figure 12 highlights an interesting insight which suggests that projects with lower goals are more likely to be successful than projects with higher goals, with the threshold level at approximately $4000. This makes intuitive sense as smaller goals would be more easily achieved, which would then classify the project as successful.
 Again, observations with very large goals were fitlered out to best visualise the feature.
 
