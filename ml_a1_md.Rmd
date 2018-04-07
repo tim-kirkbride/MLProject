@@ -1,12 +1,12 @@
 ---
 title: "Predicting the Outcome of Kickstarter Projects"
 subtitle: "MATH 2319 Machine Learning Assignment Phase I"
-author: "Josh Grosman and Tim Kirkbride"
+author: "Josh Grosman (s3494389) and Tim Kirkbride (s3650791)"
 date: "April 7, 2018"
 output: html_document
 ---
 
-```{r setup, message=FALSE}
+```{r setup, message=FALSE, warning=FALSE}
 library(ggplot2) # Hadley Wickham, Winston Chang, RStudio - https://cran.r-project.org/web/packages/ggplot2/index.html
 library(readr) # Hadley Wickham, Jim Hester, Romain Francois, R Core Team, Jukka Jylanki, Mikkel Jorgensen - https://cran.r-project.org/web/packages/readr/index.html
 library(dplyr) # Hadley Wickham, Romain Francois, Lionel Henry, Kirill Muller, RStudio - https://cran.r-project.org/web/packages/dplyr/index.html
@@ -16,7 +16,7 @@ library(lubridate) # Vitalie Spinu et. al. - https://cran.r-project.org/web/pack
 
 ## Introduction
 
-This project aims to construct a classification model to predict whether a Kickstarter project will be successful or fail. The project is split into two phases. Phase 1 will focus on data preprocessing and exploration and will be covered in this report, while Phase 2 will be concerned with model building and validation and will be covered in a later report. In this phase, the dataset and its attrbiutes will be unpacked and described. The data will then be cleaned and preprocessed. Finally, all relevant attributes will be explored with regards to their relationships with each other.
+This project aims to construct a classification model to predict whether a Kickstarter project will be successful or fail. The project will be split into two phases. Phase 1 will focus on data preprocessing and exploration and will be covered in this report, while Phase 2 will be concerned with model building and validation and will be covered in a later report. In this phase, the dataset and its attrbiutes will be unpacked and described. The data will then be cleaned and preprocessed. Finally, all relevant attributes will be explored with regards to their relationships with each other.
 
 ## Dataset
 
@@ -72,7 +72,7 @@ As as result of this, the dataset now contained 331,675 observations relating on
 * us_pledged_real: continuous
 * us_goal_real: continuous
 
-Many of the descriptive features here are self-explanatory. The last three features are corrections of the pledged and goal features, which convert the relevant currency amounts of the associated observations to USD. Information from the website where the dataset was retrieved suggests that usd_pledged was created to standardize the pledged column to USD, but there were issues with the conversion which resulted in errors. The usd_pledged_real feature amended these errors and has the correct amount pledged in USD. Similarly, the feature usd_goal_real has the USD amount of the project's goal.
+Many of the descriptive features here are self-explanatory. The last three features are corrections of the pledged and goal features, which converted the relevant currency amounts of the associated observations to USD. Information from the website where the dataset was retrieved suggests that usd_pledged was created to convert the pledged column to USD, but there were issues with the conversion which resulted in errors. The usd_pledged_real feature amended these errors and has the correct amount pledged in USD. Similarly, the feature usd_goal_real has the USD amount of the project's goal.
 
 Inspection of the levels of the country feature highlight a potential typo, where a country was assigned the code 'N,0\"', which clearly does not correspond with the rest of the levels. This will be examined further in the next section of this report.
 
@@ -80,7 +80,7 @@ Inspection of the levels of the country feature highlight a potential typo, wher
 
 ### Initial Inspection and Error Identification
 
-Prior to summarization, some obviously redundant columns were removed. The features ID and name would clearly add no value in predicting the target variable and were dropped. Additionally, as the columns usd_goal_real and usd_pledged_real contained the correct standardized goal and pledged amounts respectively, the pledged, goal and usd_pledged features were no longer relevant and so were dropped.
+Prior to summarization, some obviously irrelevant columns were removed. The features ID and name would clearly add no value in predicting the target variable and were dropped. Additionally, as the columns usd_goal_real and usd_pledged_real contained the correctly converted goal and pledged amounts respectively, the pledged, goal and usd_pledged features were no longer relevant and so were dropped.
 
 ```{r}
 ks_filt$ID<-NULL
@@ -108,9 +108,9 @@ From Table 1 and Table 2, it is clear that the data was read in correctly and th
 
 * Looking at the classes of each feature shown in Table 1, the two date columns - launched and deadline - are not of the same class, which may become an issue if these columns are needed to created a new variable. Furthermore, as the time dimension is not applicable as a feature within the present analysis, these two columns will ultimately need to be dropped.
 
-* The catergory and main_category columns appear to represent the same underlying feature - the type of business of the Kickstarter project, however, as seen in Table 2, the cardinality of category was very large at 159 levels compared to that of main_category, which had only 15 levels.
+* The catergory and main_category columns appear to represent the same underlying feature - the type of business of the Kickstarter project and suggests some redundancy. Furthermore, as seen in Table 2, the cardinality of category was very large at 159 levels compared to that of main_category, which had only 15 levels.
 
-* The currency and country columns seem to hold fairly similar information. As such, dropping one may be necessary. This would need to be investigated visually, however, so will be dealt with in the final section of this report.
+* The currency and country columns also seem to hold fairly similar information. As such, dropping one may be necessary. This would need to be investigated visually, however, so will be dealt with in the final section of this report.
 
 * It is clear that all factor columns were defined as the character class when imported and will need be converted appropriately.
 
@@ -123,7 +123,7 @@ ks_filt$country <- ifelse(ks_filt$country == "N,0\"", NA, ks_filt$country)
 sum(complete.cases(ks_filt))/nrow(ks_filt)
 ```
 
-Here, we see that the proportion of complete cases is very high, at 99.94% of all observations. This suggested that the number of observations affected by the typo was minimal and as such, it was deemed appropriate to omit all affected observations from the analysis.
+Here, we see that the proportion of complete cases is very high, at 99.94% of all observations. This suggests that the number of observations affected by the typo was minimal and as such, it was deemed appropriate to omit all affected observations from the analysis.
 
 ```{r}
 ks_filt<-ks_filt%>%na.omit()
@@ -162,7 +162,7 @@ As a result of all the above amendments, the dataset now contained 331,465 obser
 
 ## Univariate Visualizations
 
-Initially, the overall counts of successful and failed projects was examined.
+Initially, the overall counts of successful and failed projects were examined.
 
 ```{r}
 p1<-ggplot(ks_filt,aes(x=state))
@@ -173,7 +173,7 @@ p1+geom_bar()+
        x="State")
 ```
 
-Clearly the main point here is that there were more failed projects in the data than there were successful ones. This was considered in visualizations to come.
+Clearly, there were more failed projects in the data than there were successful ones. This was considered in visualizations to come.
 
 The main_category feature was then visualized to explore the differences in counts across its levels, as well as the proportions of successful and failed projects within its levels.
 
@@ -200,9 +200,9 @@ p3+geom_bar(stat="identity",position="dodge")+
   theme(axis.text.x=element_text(angle=45, hjust=1))
 ```
 
-From Figure 2, it can be seen that projects based on film and video as well as music were popular, while dance and journalism based projects were less common. Furthermore, Figure 3 highlights that generally, most categories are associated with failed projects, except for comics, dance, music and theater. Clearly these are all related to the arts.
+From Figure 2, it can be seen that projects based on film and video as well as music were popular, while dance and journalism based projects were less common. Furthermore, Figure 3 highlights that generally, most categories are associated with failed projects, except for comics, dance, music and theater which had higher proportions of successful ones. Clearly these categories are all related to the arts.
 
-Next we looked at the currency and country feature simultaneously to identify any redundancy.
+Next the currency and country features were inspected simultaneously to identify any redundancy.
 
 ```{r}
 ggplot(ks_filt, aes(x = country)) + geom_bar() +
@@ -218,7 +218,7 @@ ggplot(ks_filt, aes(x = currency)) + geom_bar()+
        x="Country")
 ```
 
-Inspection of Figures 4 and 5 does highlight a striking similarity. Additionally, they also serve to emphasize that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilizing either of these features may lead to some issues with regards to disproportional levels. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
+Inspection of Figures 4 and 5 does highlight a striking similarity. They also serve to emphasize that a large proportion of the projects are associated with the US, and also, that many other countries and currencies have much smaller amounts of associated projects. As such, utilizing either of these features may lead to some issues with regards to disproportional levels. It was therefore decided that it would be best to aggregate the levels of the country feature to represent the continents, and to then drop the country and currency features. The plots of the new continent feature are shown below.
 
 ```{r}
 europe <- c("AT", "BE", "DE", "DK", "ES", "FR", "GB", "IE", "IT", "LU", "NL", "NO", "SE")
@@ -246,7 +246,7 @@ p4 + geom_bar(position = "dodge")+
        x="Continent")
 ```
 
-Obviously, this Figure 5 still shows that North America dominates the projects being assessed, however the other levels are now more concentrated. Despite this, the amount of projects originating from Asia and Oceania remains very small.
+Obviously, Figure 6 still shows that North America dominates the projects being assessed, however the other levels are now more concentrated. Despite this, the amount of projects originating from Asia and Oceania remains very small.
 
 ```{r}
 cont_state <- table(ks_filt$continent,ks_filt$state, dnn = c("Continent","State"))
@@ -255,17 +255,17 @@ colnames(prop.cont_state) <- c("Continent","State","Proportion")
 
 p5<-ggplot(prop.cont_state,aes(x=Continent,y=Proportion,fill=State))
 p5+geom_bar(stat="identity",position="dodge")+
-  labs(title="Figure 6. Proportions of Project State within Continent")
+  labs(title="Figure 7. Proportions of Project State within Continent")
 ```
 
-From the Figure 6 above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
+From the Figure 7 above, we see that the proportions of failed and successful projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
-The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days and this means that as most projects have the same value. Therefore, the feature essentially becomes useless as there is very little variation. This will need to be further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include.
+The duration feature was explored next. As seen from Figures 8 and 9 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days. Therefore, the feature essentially becomes useless as there is very little variation. This will need to be further investigated in the next phase of this report in order to determine whether duration is a suitable feature to include in the analysis.
 
 ```{r}
 p6 <- ggplot(ks_filt, aes(x = duration))
 p6+geom_histogram(bins=30)+
-  labs(title="Figure 7. Histogram of Project Duration",
+  labs(title="Figure 8. Histogram of Project Duration",
        x="Duration",
        y="Count")
 ```
@@ -275,19 +275,19 @@ p6+geom_histogram(bins=30)+
 p7 <- ggplot(ks_filt, aes(x = duration))
 
 p7 + geom_histogram(aes(fill = state),bins=30) + 
-labs(title = "Figure 8. Histogram of Project Duration by State",
+labs(title = "Figure 9. Histogram of Project Duration by State",
 x = "Duration",
 y = "Count",
 fill = "State") +
 facet_grid(~state)
 ```
 
-Figure 9 below depicts the log of the number of backers each projects had and shows that many projects received relatively few backers, while only a minority recived very large amounts. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with low amounts of backers, and successful ones having much more varience; demonstrating similarity to a normal distribution. 
+Figure 10 below depicts the log of the number of backers each projects had and shows that many projects received relatively few backers, while only a minority had very large amounts. Figure 11 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with low amounts of backers, and successful ones having much more varience. 
 
 ```{r}
 p8<-ggplot(ks_filt,aes(x=log(backers+1)))
 p8+geom_histogram(bins=30)+ 
-  labs(title = "Figure 9. Histogram of Log Project Backers",
+  labs(title = "Figure 10. Histogram of Log Project Backers",
        x = "Log Backers",
        y = "Count")
 ```
@@ -296,7 +296,7 @@ p8+geom_histogram(bins=30)+
 ```{r}
 p9 <- ggplot(ks_filt, aes(x = log(backers+1),fill=state))
 p9 + geom_density(alpha=.4) + 
-  labs(title = "Figure 10. Density of Log Project Backers by State",
+  labs(title = "Figure 11. Density of Log Project Backers by State",
        x = "Log Backers",
        y = "Density",
        fill = "State")+
@@ -304,8 +304,8 @@ p9 + geom_density(alpha=.4) +
 ```
 
 
-Each project's goal was visualised in Figures 11 and 12. Figure 11 highlights an unsual distribution with spikes at every $5000. This may be attributable to individuals commonly setting goals at these essentially arbitrary points.
-Figure 12 highlights an interesting insight which suggests that projects with lower goals are more likely to be successful than projects with higher goals, with the threshold level at approximately $4000. This makes intuitive sense as smaller goals would be more easily achieved, which would then classify the project as successful.
+Each project's goal was visualised in Figures 12 and 13. Figure 12 highlights an unsual distribution with spikes at every $5000. This may be attributable to individuals commonly setting goals at these essentially arbitrary points.
+Figure 13 highlights an interesting insight which suggests that projects with lower goals are more likely to be successful than projects with higher goals, with the threshold level at approximately $4000. This makes intuitive sense as smaller goals would be more easily achieved, which would then classify the project as successful.
 It should be noted that some projects had very large goals which proved problematic when visualised. As such, these values were filtered out for visualisation purposes, but were retained for analysis as they were valid observations.
 
 ```{r}
@@ -314,7 +314,7 @@ ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 p10 <- ggplot(ks_goal, aes(x = usd_goal_real))
 
 p10 + geom_histogram(bins=30) + 
-labs(title = "Figure 11. Histogram of Project Goal by State",
+labs(title = "Figure 12. Histogram of Project Goal by State",
 x = "Goal",
 y = "Count")
 ```
@@ -322,19 +322,19 @@ y = "Count")
 
 ```{r}
 p10+ geom_density(aes(fill = state), alpha = 0.4)+ 
-labs(title = "Figure 12. Density of Project Goal by State",
+labs(title = "Figure 13. Density of Project Goal by State",
 x = "Goal (USD)",
 y = "Density",
 fill = "State")
 ```
 
-The log of amount pledged to each project is visualised below in Figures 13 and 14. Here, there is a striking similarity to the visualisations of the backers feature shown in Figures 9 and 10. Again, the overall distribution is almost normal with a large deviation at zero. This deviation is again mostly comprised of of failed projects recieving very little fudning, while the amount pledged to successful projects has considerable variablity.
+The log of amount pledged to each project was visualised below in Figures 14 and 15. Here, there is a striking similarity to the visualisations of the backers feature shown in Figures 10 and 11. Again, the overall distribution is almost normal with a large deviation at zero. From Figure 15 it can be seen that this deviation is again mostly comprised of of failed projects which recieved very little fudning, while the amount pledged to successful projects has considerable variablity.
 
 ```{r}
 p11 <- ggplot(ks_filt, aes(x = log(usd_pledged_real+1)))
 
 p11 + geom_histogram(bins=30)+ 
-  labs(title = "Figure 13. Histogram of Log Amount Pledged to Project",
+  labs(title = "Figure 14. Histogram of Log Amount Pledged to Project",
        x = "Log Amount Pledged (USD)",
        y = "Count")
 
@@ -344,7 +344,7 @@ p11 + geom_histogram(bins=30)+
 p12 <- ggplot(ks_filt, aes(x =log(usd_pledged_real+1),fill=state))
 
 p12 + geom_density(alpha=.4) + 
-  labs(title = "Figure 14. Density of Log Amount Pledged to Project by State",
+  labs(title = "Figure 15. Density of Log Amount Pledged to Project by State",
        x = "Log Amount Pledged (USD)",
        y = "Density",
        fill = "State")
@@ -352,14 +352,14 @@ p12 + geom_density(alpha=.4) +
 
 ## Multivariate Visualisations
 
-Figure 15 below highlights the relationship between a project's goal and its category. Inspection of the different facets emphasises that while setting smaller goals is generally likely to result in a succesful project, this is not true for all categories. Categories such as food, design and technology do not strickly adhere to this rule and demonstrate almost the same amount of succesful projects at both high and low goals. Similarly, other categories such as dance, comics and theatre are also different in that they seem to have high proportions of successful projects regardless of the goal. 
+Figure 16 below highlights the relationship between a project's goal and its category. Inspection of the different facets emphasises that while setting smaller goals is generally likely to result in a successful project, this is not true for all categories. Categories such as food, design and technology do not strickly adhere to this rule and demonstrate almost the same amount of succesful projects at both high and low goals. Similarly, other categories such as dance, comics and theatre are also different in that they seem to have high proportions of successful projects regardless of the goal. 
 
 
 ```{r}
 p13<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
 
 p13 + geom_histogram(bins=30) + facet_wrap(~main_category)+
-  labs(title = "Figure 15. Project Goal by Project State across Category",
+  labs(title = "Figure 16. Project Goal by Project State across Category",
        x="Goal (USD)",
        y="Count")
 ```
@@ -368,12 +368,12 @@ p13 + geom_histogram(bins=30) + facet_wrap(~main_category)+
 ```{r}
 p14<-ggplot(ks_filt,aes(x=continent,y=log(usd_pledged_real+1),fill=state))
 p14+geom_boxplot()+
-  labs(title = "Figure 16. Boxplot of Log Amount Pledged by Project State and Continent",
+  labs(title = "Figure 17. Boxplot of Log Amount Pledged by Project State and Continent",
        x="Continent",
        y="Log Amount Pledged (USD)")
 ```
 
-The log of the amount pledged to a project according to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that the range is quite large for the failed state, which suggests that some projects failed despite receiving considerable funding. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
+The log of the amount pledged to a project according to its continent of origin is depicted in Figure 17 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that the range is quite large for the failed state, which suggests that some projects failed despite receiving considerable funding. It is particularly interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia receieve more funding.
 
 ```{r}
 set.seed(90)
@@ -384,17 +384,17 @@ p15 <- ggplot(ks_rand, aes(x = log(backers+1), y = log(usd_pledged_real+1)))
 
 p15 + geom_point(aes(colour = state,size=usd_goal_real),alpha=.3)+
   facet_wrap(~state)+
-  labs(title="Figure 17. Project State by Log Amount Pledged to Project, Log Backers and Goal",
+  labs(title="Figure 18. Project State by Log Amount Pledged to Project, Log Backers and Goal",
        y="Log Amount Pledged (USD)",
        x="Log Backers")
 
 ```
 
-There are several interesting points to note about Figure 17. Unsurprisingly, failed projects can be seen to be highly concertrated at very low values of backers and amounts pledged, with some receiving zero of both. The successful projects are much more spread out in the top right portion of the plot. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive moderate amounts of backer and funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident among failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
+There are several interesting points to note about Figure 18. Unsurprisingly, failed projects can be seen to be highly concertrated at very low values of backers and amounts pledged, with a considerable amount receiving zero of both. The successful projects are much more spread out in the top right portion of the plot. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive relatively small amounts of backers and funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident among failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
 This plot was constructed using a random sample from the dataset.
 
 # Summary
 
-In this phase of the report, the relevance of each feature in the original Kickstarter dataset was assessed in order to best predict whether a project would fail or succeed. Of the 15 original features, only five were retained, and two new features were created. For the target feature, only observations relating to successful and failed projects were included and others were dropped. ID and name were both descriptive features which would add no insight into the upcoming analysis so were dropped. The pledged, goal and usd_pledged features were all dropped as they contained ultimately redundant information. Deadline and launched were combined to produce the duration feature, and then were both dropped. The category feature was also dropped as it was found to be too specific and therefore redunadant. Finally, some typos were found within the country feature and all irrelevant observations were dropped. 
+In this phase of the report, the relevance of each feature in the original Kickstarter dataset was assessed in order to best predict whether a project would fail or succeed. Of the 15 original features, only five were retained, and two new features were created. For the target feature, only observations relating to successful and failed projects were included and others were dropped. ID and name were both irrelevant with regards to the upcoming analysis, so were dropped. The pledged, goal and usd_pledged features were all dropped as they also contained useless information. Deadline and launched were combined to produce the duration feature, and then were both dropped. The category feature was also dropped as it was found to be redunadant. Finally, some typos were found within the country feature and all associted observations were dropped. 
 
-Visual assessment of the remaing features further demonstrated the usefulness of some features. Namely, it was shown that the cardinality of the country feature was too high given the low counts of projects within some coutnries and as such, the country feature was dropped and converted to represent continent. Additionaly the duration feature was found to add little insight into the distinction between failed and successful projects, despite this it has been retained for further evaluation in Phase 2. Important insights drawn from visualising remaining features included how projects with smaller, realistic goals are more likely to succeed, however this is not strictly true for all categories - some of which, such as those related to arts, are highly successful regardless of goal. It was found that North American projects were the most common and also most likely to be successful and that Asian projects, which were least common, received the relatively most funding. Finally, it was found that although successful projects are unsuprisingly more likely to have more backers and funding than failed ones, the relationship between these features suggests most succesful projects receive relatively few backers who pledge moderate amounts, likely in accordance with their smaller goals.
+Visual assessment of the remaining features further demonstrated the usefulness of some features. Namely, some redundancy was found between the country and currency features, and it was also shown that their cardinality was too high. As such, country was converted to represent continent and then country and currency were both dropped. Additionaly the duration feature was found to add little insight into the distinction between failed and successful projects, however despite this, it was retained for further evaluation in Phase 2. Important insights drawn from visualising the remaining features included how projects with smaller, realistic goals were more likely to succeed, however this was not strictly true for all categories - some of which, such as those related to arts, were highly successful regardless of goal. It was found that North American projects were the most common and also most likely to be successful, while Asian projects, which were least common, received the most funding if they were successful. Finally, it was found that although successful projects are unsuprisingly more likely to have more backers and funding than failed ones, the relationship between these features suggests most successful projects receive relatively few backers who pledge moderate amounts, likely in accordance with the smaller goals of successful projects.
