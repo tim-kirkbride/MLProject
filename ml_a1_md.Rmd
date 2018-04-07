@@ -6,12 +6,12 @@ date: "April 7, 2018"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-library(ggplot2)
-library(readr)
-library(dplyr)
-library(mlr)
-library(lubridate)
+```{r setup}
+library(ggplot2) # Hadley Wickham, Winston Chang, RStudio - https://cran.r-project.org/web/packages/ggplot2/index.html
+library(readr) # Hadley Wickham, Jim Hester, Romain Francois, R Core Team, Jukka Jylanki, Mikkel Jorgensen - https://cran.r-project.org/web/packages/readr/index.html
+library(dplyr) # Hadley Wickham, Romain Francois, Lionel Henry, Kirill Muller, RStudio - https://cran.r-project.org/web/packages/dplyr/index.html
+library(mlr) # Bernd Bischl et. al. - https://cran.r-project.org/web/packages/mlr/index.html
+library(lubridate) # Vitalie Spinu et. al. - https://cran.r-project.org/web/packages/lubridate/index.html
 ```
 
 ## Introduction
@@ -260,7 +260,7 @@ p5+geom_bar(stat="identity",position="dodge")+
 
 From the Figure 6 above, we see that the proportions of failed and succesfull projects from Asia and Europe are almost identical. North America appears to have a slightly higher proportion of successful projects in comparision, while Oceania has a lower proportion of successful projects.
 
-The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days and this means that as most projects have the same value. Therefore, the feature essentially becomes useless as there is very little variation. This will need to further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include.
+The duration feature was explored next. As seen from Figures 7 and 8 below, there is little distinction between the duration of successful and failed projects. The vast majority of projects have a duration of 30 days and this means that as most projects have the same value. Therefore, the feature essentially becomes useless as there is very little variation. This will need to be further investigated in the next phase of this analysis in order to determine whether duration is suitable feature to include.
 
 ```{r}
 p6 <- ggplot(ks_filt, aes(x = duration))
@@ -282,7 +282,7 @@ fill = "State") +
 facet_grid(~state)
 ```
 
-Figure 9 below depicts the number of backers each projects had and shows that many projects received relatively few backers, while only a minority recived very large amounts. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with low amounts of backers, and successful ones having much more varience; demonstrating similarity to a normal distribution. 
+Figure 9 below depicts the log of the number of backers each projects had and shows that many projects received relatively few backers, while only a minority recived very large amounts. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with low amounts of backers, and successful ones having much more varience; demonstrating similarity to a normal distribution. 
 
 ```{r}
 p8<-ggplot(ks_filt,aes(x=log(backers+1)))
@@ -373,7 +373,7 @@ p14+geom_boxplot()+
        y="Log Amount Pledged (USD)")
 ```
 
-The amount pledged to a project according to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that the range is quite large for the failed state, which suggests that some projects failed despite receiving considerable funding. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
+The log of the amount pledged to a project according to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that the range is quite large for the failed state, which suggests that some projects failed despite receiving considerable funding. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
 
 ```{r}
 set.seed(90)
