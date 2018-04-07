@@ -1,7 +1,8 @@
 ---
-title: "ml_a1_md_draft"
+title: "Predicting the Outcome of Kickstarter Projects"
+subtitle: "MATH 2319 Machine Learning Assignment Phase I"
 author: "Josh Grosman and Tim Kirkbride"
-date: "March 23, 2018"
+date: "April 7, 2018"
 output: html_document
 ---
 
@@ -19,7 +20,7 @@ This project aimed to construct a classification model to predict whether a Kick
 
 ## Dataset
 
-```{r}
+```{r,warning=FALSE,message=FALSE}
 ks <- read_csv("ks-projects-201801.csv")
 ```
 
@@ -96,7 +97,7 @@ head(ks_filt)%>% knitr::kable( caption = 'Table 1. First 6 rows of Kickstarter D
 ```
 
 
-```{r}
+```{r, warning=FALSE,message=FALSE}
 summarizeColumns(ks_filt)%>% knitr::kable( caption = 'Table 2. Feature Summary Prior To Data Preprocessing')
 
 ```
@@ -263,7 +264,7 @@ The duration feature was explored next. As seen from Figures 7 and 8 below, ther
 
 ```{r}
 p6 <- ggplot(ks_filt, aes(x = duration))
-p6+geom_histogram()+
+p6+geom_histogram(bins=30)+
   labs(title="Figure 7. Histogram of Project Duration",
        x="Duration",
        y="Count")
@@ -273,7 +274,7 @@ p6+geom_histogram()+
 ```{r}
 p7 <- ggplot(ks_filt, aes(x = duration))
 
-p7 + geom_histogram(aes(fill = state)) + 
+p7 + geom_histogram(aes(fill = state),bins=30) + 
 labs(title = "Figure 8. Histogram of Project Duration by State",
 x = "Duration",
 y = "Count",
@@ -281,41 +282,38 @@ fill = "State") +
 facet_grid(~state)
 ```
 
-Figure 9 below depicts the number of backers each projects had and shows a clear positive skew. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with zero backers, and successful ones having much more varience. 
-It should be noted that some projects had very large amounts of backers which proved problematic when visualised. As such, these values were filtered out for visualisation purposes, but were retained for analysis as they were valid observations.
+Figure 9 below depicts the number of backers each projects had and shows that many projects received relatively few backers, while only a minority recived very large amounts. Figure 10 further shows that the distribution is essentially split across the state feature, with failed projects being especially associted with low amounts of backers, and successful ones having much more varience; demonstrating similarity to a normal distribution. 
 
 ```{r}
-back_filt<-ks_filt%>%filter(backers<150)
-
-p8<-ggplot(back_filt,aes(x=backers))
-p8+geom_histogram()+ 
-labs(title = "Figure 9. Histogram of Project Backers",
-x = "Backers",
-y = "Count")
+p8<-ggplot(ks_filt,aes(x=log(backers+1)))
+p8+geom_histogram(bins=30)+ 
+  labs(title = "Figure 9. Histogram of Log Project Backers",
+       x = "Log Backers",
+       y = "Count")
 ```
 
 
 ```{r}
-p9 <- ggplot(back_filt, aes(x = backers,fill=state))
-
+p9 <- ggplot(ks_filt, aes(x = log(backers+1),fill=state))
 p9 + geom_density(alpha=.4) + 
-labs(title = "Figure 10. Density of Project Backers by State",
-x = "Backers",
-y = "Density",
-fill = "State")
+  labs(title = "Figure 10. Density of Log Project Backers by State",
+       x = "Log Backers",
+       y = "Density",
+       fill = "State")+
+  coord_cartesian(xlim = c(0, 10))
 ```
 
 
 Each project's goal was visualised in Figures 11 and 12. Figure 11 highlights an unsual distribution with spikes at every $5000. This may be attributable to individuals commonly setting goals at these essentially arbitrary points.
 Figure 12 highlights an interesting insight which suggests that projects with lower goals are more likely to be successful than projects with higher goals, with the threshold level at approximately $4000. This makes intuitive sense as smaller goals would be more easily achieved, which would then classify the project as successful.
-Again, observations with very large goals were fitlered out to best visualise the feature.
+It should be noted that some projects had very large goals which proved problematic when visualised. As such, these values were filtered out for visualisation purposes, but were retained for analysis as they were valid observations.
 
 ```{r}
 ks_goal <- ks_filt %>% filter(usd_goal_real <= 25000)
 
 p10 <- ggplot(ks_goal, aes(x = usd_goal_real))
 
-p10 + geom_histogram() + 
+p10 + geom_histogram(bins=30) + 
 labs(title = "Figure 11. Histogram of Project Goal by State",
 x = "Goal",
 y = "Count")
@@ -330,29 +328,26 @@ y = "Density",
 fill = "State")
 ```
 
-The amount pledged to each project is visualised below in Figures 13 and 14. Here, there is a striking similarity to the visualisations of the backers feature shown in Figures 9 and 10. Again, the overall distribution is highly positively skewed, with the majority of failed projects recieving very little fudning, while the amount pledged to successful projects has considerable variablity. 
-The data used in this visualisation was once again filtered of extreme values.
+The log of amount pledged to each project is visualised below in Figures 13 and 14. Here, there is a striking similarity to the visualisations of the backers feature shown in Figures 9 and 10. Again, the overall distribution is almost normal with a large deviation at zero. This deviation is again mostly comprised of of failed projects recieving very little fudning, while the amount pledged to successful projects has considerable variablity.
 
 ```{r}
-pledge_filt<-ks_filt%>%filter(usd_pledged_real<4000)
+p11 <- ggplot(ks_filt, aes(x = log(usd_pledged_real+1)))
 
-p11 <- ggplot(pledge_filt, aes(x = usd_pledged_real))
-
-p11 + geom_histogram()+ 
-labs(title = "Figure 13. Histogram of Amount Pledged to Project",
-x = "Amount Pledged (USD)",
-y = "Count")
+p11 + geom_histogram(bins=30)+ 
+  labs(title = "Figure 13. Histogram of Log Amount Pledged to Project",
+       x = "Log Amount Pledged (USD)",
+       y = "Count")
 
 ```
 
 ```{r}
-p12 <- ggplot(pledge_filt, aes(x = usd_pledged_real,fill=state))
+p12 <- ggplot(ks_filt, aes(x =log(usd_pledged_real+1),fill=state))
 
 p12 + geom_density(alpha=.4) + 
-labs(title = "Figure 14. Density of Amount Pledged to Project by State",
-x = "Amount Pledged (USD)",
-y = "Density",
-fill = "State")
+  labs(title = "Figure 14. Density of Log Amount Pledged to Project by State",
+       x = "Log Amount Pledged (USD)",
+       y = "Density",
+       fill = "State")
 ```
 
 ## Multivariate Visualisations
@@ -363,7 +358,7 @@ Figure 15 below highlights the relationship between a project's goal and its cat
 ```{r}
 p13<-ggplot(ks_goal,aes(x=usd_goal_real, fill=state))
 
-p13 + geom_histogram() + facet_wrap(~main_category)+
+p13 + geom_histogram(bins=30) + facet_wrap(~main_category)+
   labs(title = "Figure 15. Project Goal by Project State across Category",
        x="Goal (USD)",
        y="Count")
@@ -371,36 +366,32 @@ p13 + geom_histogram() + facet_wrap(~main_category)+
 
 
 ```{r}
-pledge_filt2<-ks_filt%>%filter(usd_pledged_real<7500)
-p14<-ggplot(pledge_filt2,aes(x=continent,y=usd_pledged_real,fill=state))
+p14<-ggplot(ks_filt,aes(x=continent,y=log(usd_pledged_real+1),fill=state))
 p14+geom_boxplot()+
-  labs(title = "Figure 16. Boxplot of Amount Pledged by Project State and Continent",
+  labs(title = "Figure 16. Boxplot of Log Amount Pledged by Project State and Continent",
        x="Continent",
-       y="Amount Pledged (USD)")
+       y="Log Amount Pledged (USD)")
 ```
 
-The amount pledged to a project according to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that there are many outliers in the failed state, which despite receiving considerable funding still failed. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
+The amount pledged to a project according to its continent of origin is depicted in Figure 16 above. Here we see minimal differences in the distribution of the amounts pledged to failed projects across continents, all showing on average next to zero funding. It is also clear that the range is quite large for the failed state, which suggests that some projects failed despite receiving considerable funding. However, it is interesting to see that Asia has the highest mean amount pledged to successful projects of all other continents, when it was previously shown that it had by far the smallest representation in the dataset. This suggests that in general, projects started in Asia would receieve more funding.
 
 ```{r}
-ks_scatter<-ks_filt%>%filter(backers < 10000)
-ks_scatter<-ks_scatter%>%filter(usd_pledged_real < 1000000)
-
 set.seed(90)
-index <- sample(1:nrow(ks_scatter), 5000)
-ks_rand<-ks_scatter[index, ]
+index <- sample(1:nrow(ks_filt), 5000)
+ks_rand<-ks_filt[index, ]
 
-p15 <- ggplot(ks_rand, aes(x = backers, y = usd_pledged_real))
+p15 <- ggplot(ks_rand, aes(x = log(backers+1), y = log(usd_pledged_real+1)))
 
 p15 + geom_point(aes(colour = state,size=usd_goal_real),alpha=.3)+
   facet_wrap(~state)+
-  labs(title="Figure 17. Project State by Amount Pledged to Project, Backers and Goal",
-       y="Amount Pledged (USD)",
-       x="Backers")
+  labs(title="Figure 17. Project State by Log Amount Pledged to Project, Log Backers and Goal",
+       y="Log Amount Pledged (USD)",
+       x="Log Backers")
 
 ```
 
-There are several interesting points to note about Figure 17. Unsurprisingly, failed projects can be seen to be highly concertrated around the origin, suggesting they received little funding and backers. Visually, this gives off the sense that the failed facet has fewer points, when in fact failed projects were more common than succesful ones. The successful projects are much more spread out and suggest a moderate, postiive relationship between backers and amount pledged. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive few backers and and moderate funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident among failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
-This plot was constructed using a random sample from the dataset with extreme values filtered from the backers and usd_pledged_real features.
+There are several interesting points to note about Figure 17. Unsurprisingly, failed projects can be seen to be highly concertrated at very low values of backers and amounts pledged, with some receiving zero of both. The successful projects are much more spread out in the top right portion of the plot. The dispertion of successful points is also promising for the upcoming analysis, as it suggests that there is not too much correspondence between backers and amount pledged. However, the concentration of points does indicate that succesful projects typically receive moderate amounts of backer and funding. This may ultimately be linked to their smaller goals which contrast the much larger goals evident among failed projects. As previously mentioned, this would suggest that perhaps failed projects were too ambitious with their goals, and considering this, it would make sense that the projects with smaller goals were more likely to reach their targets and become successful; requiring fewer backers pledging smaller amounts. 
+This plot was constructed using a random sample from the dataset.
 
 # Summary
 
