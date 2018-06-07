@@ -2,10 +2,10 @@ library(readr)
 library(dplyr)
 library(mlbench)
 library(tidyverse)
-library(spFSR)
-library(caret)
 library(mlr)
 library(kknn)
+library(caret)
+
 
 ks <- read_csv("Kickstarter_filtered.csv")
 View(ks)
@@ -59,7 +59,7 @@ ps.rpart <- makeParamSet(
 # For randomForest, fine-tune mtry i.e mumber of variables randomly 
 # sampled as candidates at each split. Seeing as there are only 6 descriptive variables, smaller values will be considered
 ps.rf <- makeParamSet(
-  makeDiscreteParam('mtry', values = c(1,2,3))
+  makeDiscreteParam('mtry', values = 1:6)
 )
 
 # For kknn, we fine-tune k = 1 to 50 
@@ -68,26 +68,61 @@ ps.knn <- makeParamSet(
 )
 
 # Configure tune control search to be random due to computational constraints and a 5-CV stratified sampling
-ctrl  <- makeTuneControlRandom(maxit = 10)
+ctrl.rnd  <- makeTuneControlRandom(maxit = 10)
+ctrl.grd <- makeTuneControlGrid()
 rdesc <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 
 #construct wrappers with with tuning constraints
-tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl)
-tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl)
-tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl)
-tunedlrn.knn <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl)
+tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.rnd)
+tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl.rnd)
+tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl.grd)
+tunedlrn.knn <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl.rnd)
 
 #train models with tuned learners (this will take forever)
-tunedMod.nb  <- train(tunedlrn.nb, task)
-tunedMod.rpart  <- train(tunedlrn.rpart, task)
-tunedMod.rf <- train(tunedlrn.rf, task)
-tunedMod.knn  <- train(tunedlrn.knn, task)
+tunedMod.nb  <- mlr::train(tunedlrn.nb, task)
+tunedMod.rpart  <- mlr::train(tunedlrn.rpart, task)
+tunedMod.rf <- mlr::train(tunedlrn.rf, task)
+tunedMod.knn  <- mlr::train(tunedlrn.knn, task)
 
 
+#test smaller samples...
+abc<-train[1:1000,]
+abc.task <- makeClassifTask(data = abc, target = 'state', id = 'ks')
 
+tunedMod.nb.abc  <- mlr::train(tunedlrn.nb, abc.task)
+tunedMod.rpart.abc  <- mlr::train(tunedlrn.rpart, abc.task)
+tunedMod.rf.abc <- mlr::train(tunedlrn.rf, abc.task)
+tunedMod.knn.abc  <- mlr::train(tunedlrn.knn, abc.task)
+
+#predicting on training
+tunedPred.nb.abc <- predict(tunedMod.nb.abc, abc.task)
+tunedPred.rpart.abc <- predict(tunedMod.rpart.abc, abc.task)
+tunedPred.rf.abc <- predict(tunedMod.rf.abc, abc.task)
+tunedPred.knn.abc<- predict(tunedMod.knn.abc, abc.task)
+
+#threshold assessment
+d1 <- generateThreshVsPerfData(tunedPred.nb.abc, measures = list(mmce))
+d2 <- generateThreshVsPerfData(tunedPred.rpart.abc, measures = list(mmce))
+d3 <- generateThreshVsPerfData(tunedPred.rf.abc, measures = list(mmce))
+d4 <- generateThreshVsPerfData(tunedPred.knn.abc, measures = list(mmce))
+
+#plotting thresholds
+plotThreshVsPerf(d1) + labs(title = 'Threshold Adjustment for Naive Bayes', x = 'Threshold')
+plotThreshVsPerf(d2) + labs(title = 'Threshold Adjustment for Decision Tree', x = 'Threshold')
+plotThreshVsPerf(d3) + labs(title = 'Threshold Adjustment for Random Forest', x = 'Threshold')
+plotThreshVsPerf(d4) + labs(title = 'Threshold Adjustment for ...-KNN', x = 'Threshold')
+
+#to find ideal threshold point (maybe just report range instead of mean?)
+mean(d1$data[d1$data$mmce==min(d1$data$mmce),]$threshold)
+mean(d2$data[d2$data$mmce==min(d2$data$mmce),]$threshold)
+mean(d3$data[d3$data$mmce==min(d3$data$mmce),]$threshold)
+mean(d4$data[d4$data$mmce==min(d4$data$mmce),]$threshold)
 
 
 #####################################################################################
+
+
+
 
 
 
