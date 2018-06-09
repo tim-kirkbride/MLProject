@@ -30,11 +30,15 @@ ks[sapply(ks, is.numeric)]  <- lapply(ks[sapply(ks, is.numeric)], normalise)
 set.seed(12)
 ks_samp<-ks[sample(nrow(ks), 40000), ]
 
+prop.table(table(ks_samp$state))
+
 #partitioning training/validation : test (70:30)
 train.index <- createDataPartition(ks_samp$state, p = .7, list = FALSE)
 train <- ks_samp[ train.index,]
 test  <- ks_samp[-train.index,]
 
+prop.table(table(train$state))
+prop.table(table(test$state))
 
 #template
 task <- makeClassifTask(data = train, target = 'state', id = 'ks')
@@ -51,26 +55,26 @@ lrns <- list(
 
 # For naiveBayes, we can fine-tune Laplacian
 ps.nb <- makeParamSet(
-  makeDiscreteParam('laplace', values=c(0,10,25,50,100,200,500))
+  makeDiscreteParam('laplace', values=c(0,10,25,50,100,200))
 )
 
 # For decision tree, fine-tune min.split i.e. minimum number of observations in a node for a split to be attempted
 ps.rpart <- makeParamSet(
-  makeDiscreteParam('minsplit', values=c(5,150,295,440,585)),
-  makeDiscreteParam("minbucket", values=c(5,105,205,305))
+  makeDiscreteParam('minsplit', values=c(5,150,300,450,600)),
+  makeDiscreteParam("minbucket", values=c(5,100,200,300))
 )
 
 
-# For randomForest, fine-tune mtry i.e mumber of variables randomly 
+# For randomForest, fine-tune mtry i.e mumber of variables and ntree i.e number of trees 
 # sampled as candidates at each split. Seeing as there are only 6 descriptive variables, smaller values will be considered
 ps.rf <- makeParamSet(
   makeDiscreteParam('mtry', values = c(1,2,3)),
-  makeDiscreteParam("ntree", values = c(10,30))
+  makeDiscreteParam("ntree", values = c(10,20,30))
 )
 
-# For kknn, we fine-tune k for values between 1-200
+# For kknn, we fine-tune k for values between 1-30
 ps.knn <- makeParamSet(
-  makeDiscreteParam('k', values=c(1,2,10,50,100,200))
+  makeDiscreteParam('k', values=c(1,3,5,10,20,30))
 )
 
 
@@ -79,37 +83,101 @@ ps.knn <- makeParamSet(
 ctrl.grd <- makeTuneControlGrid()
 rdesc <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 
-#assessing parameters
+#parameter tuning
 
 #nb
 res.nb = tuneParams(lrns[[1]], task = task, control = ctrl.grd,
                  measures = mmce, resampling = rdesc,
                  par.set = ps.nb)
-#plot
-ps.nb.plot <- generateHyperParsEffectData(res.nb)
-plotHyperParsEffect(ps.nb.plot, x = "laplace", y = "mmce.test.mean", plot.type = "line")
 
 #rpart
 res.rpart = tuneParams(lrns[[2]], task = task, control = ctrl.grd,
-                    measures = mmce, resampling = rdesc,
-                    par.set = ps.rpart)
-
-#plot
-ps.rpart.plot = generateHyperParsEffectData(res.rpart)
-plotHyperParsEffect(ps.rpart.plot, x = "minsplit", y = "minbucket", z = "mmce.test.mean",
-                    plot.type = "heatmap")
+                       measures = mmce, resampling = rdesc,
+                       par.set = ps.rpart)
 
 #rf
 res.rf = tuneParams(lrns[[3]], task = task, control = ctrl.grd,
-                       measures = mmce, resampling = rdesc,
-                       par.set = ps.rf)
-#plot
+                    measures = mmce, resampling = rdesc,
+                    par.set = ps.rf)
+
+#knn
+res.knn = tuneParams(lrns[[4]], task = task, control = ctrl.grd,
+                     measures = mmce, resampling = rdesc,
+                     par.set = ps.knn)
+
+#parameter plots
+
+#nb
+ps.nb.plot <- generateHyperParsEffectData(res.nb)
+plotHyperParsEffect(ps.nb.plot, x = "laplace", y = "mmce.test.mean", plot.type = "line")
+
+res.nb$x
+#0 is clearly the optimal value of the laplace smoothing parameter, suggesting no smoothing is required
+
+#rpart
+ps.rpart.plot = generateHyperParsEffectData(res.rpart)
+plotHyperParsEffect(ps.rpart.plot, x = "minsplit", y = "minbucket", z = "mmce.test.mean",
+                    plot.type = "heatmap")+
+  scale_x_continuous(breaks=c(5,150,300,450,600))+
+  scale_y_continuous(breaks=c(5,100,200,300))
+
+res.rpart$x
+# 5 is shown to be the optimal value for both the minsplit and minbucket parameters
+# the plot suggests that these specfic value are not particularly notable, as similar
+# mmce measures were found for minsplit values up to 450 and minbucket values up to 200
+# given very little variance in the mmce measure is seen across these broad ranges, 
+# further tuning was deemed unnecessary and was not attempted
+
+#rf
 ps.rf.plot <- generateHyperParsEffectData(res.rf)
-plotHyperParsEffect(ps.rf.plot, x = "mtry", y = "mmce.test.mean", plot.type = "line")
+plotHyperParsEffect(ps.rf.plot, x = "mtry", y = "ntree", z = "mmce.test.mean",
+                    plot.type = "heatmap")+scale_y_continuous(breaks=c(10,20,30))
 
-#
+res.rf$x
 
-#construct wrappers with with tuning constraints
+#the plot clearly shows that the top corner cell, corresponding to mtry = 3 and 
+#ntree = 30 had the lowest mmce of all other combinations tested
+
+#knn
+ps.knn.plot <- generateHyperParsEffectData(res.knn)
+plotHyperParsEffect(ps.knn.plot, x = "k", y = "mmce.test.mean", plot.type = "line")
+
+res.knn$x
+
+#here the optimal k value of 10 is shown as the lowest point in the plot
+#the plot shows that there is an initial dip in the mmce for k values between 3 and 20
+#and as such, a more appropriate k value may exist. further tuning was therefore attempted
+
+#knn retuning 
+ps.knn2 <- makeParamSet(
+  makeDiscreteParam('k', values=seq(4,18,by=2))
+)
+
+res.knn2 = tuneParams(lrns[[4]], task = task, control = ctrl.grd,
+                     measures = mmce, resampling = rdesc,
+                     par.set = ps.knn2)
+
+ps.knn2.plot <- generateHyperParsEffectData(res.knn2)
+plotHyperParsEffect(ps.knn2.plot, x = "k", y = "mmce.test.mean", plot.type = "line")
+
+res.knn2$x
+
+#the variation in mmce with k is now much clearer for the range 4 - 18, and it can be 
+#seen that k = 4 is the optimal point for minimising mmce.
+
+#fusing optimal parameters into tuned learners
+#knn
+tunedLrn.knn <- setHyperPars(makeLearner(("classif.kknn")), par.vals = res.knn$x) 
+
+#training tuned learners
+tunedMod.knn <- mlr::train(tunedLrn.knn, task) 
+
+#predicting using tuned models
+tunedPred.knn <- predict(tunedMod.knn, newdata = test)
+
+#threshold adjustment
+
+#construct wrappers with tuning constraints
 tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.grd)
 tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl.grd)
 tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl.grd)
