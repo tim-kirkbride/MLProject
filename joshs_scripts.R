@@ -26,12 +26,14 @@ normalise<-function(x){
 
 ks[sapply(ks, is.numeric)]  <- lapply(ks[sapply(ks, is.numeric)], normalise)
 
+#taking random sample to ensure code runs
 set.seed(12)
+ks_samp<-ks[sample(nrow(ks), 40000), ]
 
 #partitioning training/validation : test (70:30)
-train.index <- createDataPartition(ks$state, p = .7, list = FALSE)
-train <- ks[ train.index,]
-test  <- ks[-train.index,]
+train.index <- createDataPartition(ks_samp$state, p = .7, list = FALSE)
+train <- ks_samp[ train.index,]
+test  <- ks_samp[-train.index,]
 
 
 #template
@@ -45,66 +47,91 @@ lrns <- list(
   makeLearner('classif.kknn', id= "knn", predict.type = 'prob')
 )
 
+#####Initial tuning searches
+
 # For naiveBayes, we can fine-tune Laplacian
 ps.nb <- makeParamSet(
-  makeNumericParam('laplace', lower = 0, upper = 30)
+  makeDiscreteParam('laplace', values=c(0,10,25,50,100,200,500))
 )
 
 # For decision tree, fine-tune min.split i.e. minimum number of observations in a node for a split to be attempted
 ps.rpart <- makeParamSet(
-  makeIntegerParam('minsplit', lower = 1, upper = 50)
+  makeDiscreteParam('minsplit', values=c(5,150,295,440,585)),
+  makeDiscreteParam("minbucket", values=c(5,105,205,305))
 )
 
 
 # For randomForest, fine-tune mtry i.e mumber of variables randomly 
 # sampled as candidates at each split. Seeing as there are only 6 descriptive variables, smaller values will be considered
 ps.rf <- makeParamSet(
-  makeDiscreteParam('mtry', values = 1:6)
+  makeDiscreteParam('mtry', values = c(1,2,3)),
+  makeDiscreteParam("ntree", values = c(10,30))
 )
 
-# For kknn, we fine-tune k = 1 to 50 
+# For kknn, we fine-tune k for values between 1-200
 ps.knn <- makeParamSet(
-  makeIntegerParam('k', lower = 1, upper = 50)
+  makeDiscreteParam('k', values=c(1,2,10,50,100,200))
 )
 
-# Configure tune control search to be random due to computational constraints and a 5-CV stratified sampling
-ctrl.rnd  <- makeTuneControlRandom(maxit = 10)
+
+# Configure tune control grid search and a 5-CV stratified sampling
+
 ctrl.grd <- makeTuneControlGrid()
 rdesc <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 
-#construct wrappers with with tuning constraints
-tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.rnd)
-tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl.rnd)
-tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl.grd)
-tunedlrn.knn <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl.rnd)
+#assessing parameters
 
-#train models with tuned learners (this will take forever)
+#nb
+res.nb = tuneParams(lrns[[1]], task = task, control = ctrl.grd,
+                 measures = mmce, resampling = rdesc,
+                 par.set = ps.nb)
+#plot
+ps.nb.plot <- generateHyperParsEffectData(res.nb)
+plotHyperParsEffect(ps.nb.plot, x = "laplace", y = "mmce.test.mean", plot.type = "line")
+
+#rpart
+res.rpart = tuneParams(lrns[[2]], task = task, control = ctrl.grd,
+                    measures = mmce, resampling = rdesc,
+                    par.set = ps.rpart)
+
+#plot
+ps.rpart.plot = generateHyperParsEffectData(res.rpart)
+plotHyperParsEffect(ps.rpart.plot, x = "minsplit", y = "minbucket", z = "mmce.test.mean",
+                    plot.type = "heatmap")
+
+#rf
+res.rf = tuneParams(lrns[[3]], task = task, control = ctrl.grd,
+                       measures = mmce, resampling = rdesc,
+                       par.set = ps.rf)
+#plot
+ps.rf.plot <- generateHyperParsEffectData(res.rf)
+plotHyperParsEffect(ps.rf.plot, x = "mtry", y = "mmce.test.mean", plot.type = "line")
+
+#
+
+#construct wrappers with with tuning constraints
+tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.grd)
+tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl.grd)
+tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl.grd)
+tunedlrn.knn <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl.grd)
+
+#train models with tuned learners 
 tunedMod.nb  <- mlr::train(tunedlrn.nb, task)
 tunedMod.rpart  <- mlr::train(tunedlrn.rpart, task)
 tunedMod.rf <- mlr::train(tunedlrn.rf, task)
 tunedMod.knn  <- mlr::train(tunedlrn.knn, task)
 
-
-#test smaller samples...
-abc<-train[1:1000,]
-abc.task <- makeClassifTask(data = abc, target = 'state', id = 'ks')
-
-tunedMod.nb.abc  <- mlr::train(tunedlrn.nb, abc.task)
-tunedMod.rpart.abc  <- mlr::train(tunedlrn.rpart, abc.task)
-tunedMod.rf.abc <- mlr::train(tunedlrn.rf, abc.task)
-tunedMod.knn.abc  <- mlr::train(tunedlrn.knn, abc.task)
-
 #predicting on training
-tunedPred.nb.abc <- predict(tunedMod.nb.abc, abc.task)
-tunedPred.rpart.abc <- predict(tunedMod.rpart.abc, abc.task)
-tunedPred.rf.abc <- predict(tunedMod.rf.abc, abc.task)
-tunedPred.knn.abc<- predict(tunedMod.knn.abc, abc.task)
+tunedPred.nb <- predict(tunedMod.nb, task)
+tunedPred.rpart <- predict(tunedMod.rpart, task)
+tunedPred.rf <- predict(tunedMod.rf, task)
+tunedPred.knn<- predict(tunedMod.knn, task)
 
 #threshold assessment
-d1 <- generateThreshVsPerfData(tunedPred.nb.abc, measures = list(mmce))
-d2 <- generateThreshVsPerfData(tunedPred.rpart.abc, measures = list(mmce))
-d3 <- generateThreshVsPerfData(tunedPred.rf.abc, measures = list(mmce))
-d4 <- generateThreshVsPerfData(tunedPred.knn.abc, measures = list(mmce))
+d1 <- generateThreshVsPerfData(tunedPred.nb, measures = list(mmce))
+d2 <- generateThreshVsPerfData(tunedPred.rpart, measures = list(mmce))
+d3 <- generateThreshVsPerfData(tunedPred.rf, measures = list(mmce))
+d4 <- generateThreshVsPerfData(tunedPred.knn, measures = list(mmce))
 
 #plotting thresholds
 plotThreshVsPerf(d1) + labs(title = 'Threshold Adjustment for Naive Bayes', x = 'Threshold')
@@ -117,7 +144,6 @@ mean(d1$data[d1$data$mmce==min(d1$data$mmce),]$threshold)
 mean(d2$data[d2$data$mmce==min(d2$data$mmce),]$threshold)
 mean(d3$data[d3$data$mmce==min(d3$data$mmce),]$threshold)
 mean(d4$data[d4$data$mmce==min(d4$data$mmce),]$threshold)
-
 
 #####################################################################################
 
