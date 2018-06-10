@@ -51,6 +51,72 @@ lrns <- list(
   makeLearner('classif.kknn', id= "knn", predict.type = 'prob')
 )
 
+#feature selection
+
+mFV <- generateFilterValuesData(task,
+                                method = c('information.gain',
+                                           'chi.squared'))
+plotFilterValues(mFV)
+
+#number of features tuning
+ps.feat <- makeParamSet(makeDiscreteParam("fw.abs", values = c(2,3,4)))
+rdesc.feat <- makeResampleDesc("CV", iters = 3)
+
+#nb
+lrn.nb <- makeFilterWrapper(learner = lrns[[1]], fw.method = "chi.squared")
+
+res.feat.nb <- tuneParams(lrn.nb, task =task,
+                             resampling = rdesc.feat,
+                             par.set = ps.feat,
+                             control = makeTuneControlGrid())
+
+fusedLrn.nb <- makeFilterWrapper(learner = "classif.naiveBayes",
+                                    fw.method = "chi.squared",
+                                    fw.abs = res.feat.nb$x$fw.abs)
+#optimal is 4 features
+
+#rpart
+lrn.rpart <- makeFilterWrapper(learner = lrns[[2]], fw.method = "chi.squared")
+
+res.feat.rpart <- tuneParams(lrn.rpart, task =task,
+                  resampling = rdesc.feat,
+                  par.set = ps.feat,
+                  control = makeTuneControlGrid())
+
+fusedLrn.rpart <- makeFilterWrapper(learner = "classif.rpart",
+                              fw.method = "chi.squared",
+                              fw.abs = res.feat.rpart$x$fw.abs)
+
+#optimal is 3 features
+
+#rf
+lrn.rf <- makeFilterWrapper(learner = lrns[[3]], fw.method = "chi.squared")
+
+res.feat.rf <- tuneParams(lrn.rf, task =task,
+                             resampling = rdesc.feat,
+                             par.set = ps.feat,
+                             control = makeTuneControlGrid())
+
+fusedLrn.rf <- makeFilterWrapper(learner = "classif.randomForest",
+                              fw.method = "chi.squared",
+                              fw.abs = res.feat.rf$x$fw.abs)
+
+#optimal is 3
+
+#knn
+lrn.knn <- makeFilterWrapper(learner = lrns[[4]], fw.method = "chi.squared")
+
+res.feat.knn <- tuneParams(lrn.knn, task =task,
+                          resampling = rdesc.feat,
+                          par.set = ps.feat,
+                          control = makeTuneControlGrid())
+
+fusedLrn.knn <- makeFilterWrapper(learner = "classif.kknn",
+                                 fw.method = "chi.squared",
+                                 fw.abs = res.feat.knn$x$fw.abs)
+
+#optimal 3
+
 #####Initial tuning searches
 
 # For naiveBayes, we can fine-tune Laplacian
@@ -86,24 +152,33 @@ rdesc <- makeResampleDesc("CV", iters = 5, stratify = TRUE)
 #parameter tuning
 
 #nb
-res.nb = tuneParams(lrns[[1]], task = task, control = ctrl.grd,
+res.nb = tuneParams(fusedLrn.nb, task = task, control = ctrl.grd,
                  measures = mmce, resampling = rdesc,
                  par.set = ps.nb)
 
 #rpart
-res.rpart = tuneParams(lrns[[2]], task = task, control = ctrl.grd,
+res.rpart = tuneParams(fusedLrn.rpart, task = task, control = ctrl.grd,
                        measures = mmce, resampling = rdesc,
                        par.set = ps.rpart)
 
 #rf
-res.rf = tuneParams(lrns[[3]], task = task, control = ctrl.grd,
+res.rf = tuneParams(fusedLrn.rf, task = task, control = ctrl.grd,
                     measures = mmce, resampling = rdesc,
                     par.set = ps.rf)
 
 #knn
-res.knn = tuneParams(lrns[[4]], task = task, control = ctrl.grd,
+res.knn = tuneParams(fusedLrn.knn, task = task, control = ctrl.grd,
                      measures = mmce, resampling = rdesc,
                      par.set = ps.knn)
+
+#dont run again #############################
+saveRDS(res.nb, file = "res_nb.rds")
+saveRDS(res.rpart, file = "res_rpart.rds")
+saveRDS(res.rf, file = "res_rf.rds")
+#############################################
+
+res.nb<-readRDS(file = "res_nb.rds")
+
 
 #parameter plots
 
@@ -153,9 +228,13 @@ ps.knn2 <- makeParamSet(
   makeDiscreteParam('k', values=seq(4,18,by=2))
 )
 
-res.knn2 = tuneParams(lrns[[4]], task = task, control = ctrl.grd,
+res.knn2 = tuneParams(fusedLrn.knn, task = task, control = ctrl.grd,
                      measures = mmce, resampling = rdesc,
                      par.set = ps.knn2)
+
+###### dont run again ################
+saveRDS(res.knn2, file = "res_knn2.rds")
+#######################################
 
 ps.knn2.plot <- generateHyperParsEffectData(res.knn2)
 plotHyperParsEffect(ps.knn2.plot, x = "k", y = "mmce.test.mean", plot.type = "line")
@@ -165,17 +244,21 @@ res.knn2$x
 #the variation in mmce with k is now much clearer for the range 4 - 18, and it can be 
 #seen that k = 4 is the optimal point for minimising mmce.
 
+
+
 #fusing optimal parameters into tuned learners
 #knn
-tunedLrn.knn <- setHyperPars(makeLearner(("classif.kknn")), par.vals = res.knn$x) 
+tunedLrn.knn <- setHyperPars(makeLearner(("classif.kknn")), par.vals = res.knn2$x) 
 
 #training tuned learners
 tunedMod.knn <- mlr::train(tunedLrn.knn, task) 
 
-#predicting using tuned models
+#predicting using tuned models (dont do yet)
 tunedPred.knn <- predict(tunedMod.knn, newdata = test)
 
 #threshold adjustment
+
+###############################################
 
 #construct wrappers with tuning constraints
 tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.grd)
@@ -188,6 +271,8 @@ tunedMod.nb  <- mlr::train(tunedlrn.nb, task)
 tunedMod.rpart  <- mlr::train(tunedlrn.rpart, task)
 tunedMod.rf <- mlr::train(tunedlrn.rf, task)
 tunedMod.knn  <- mlr::train(tunedlrn.knn, task)
+
+#########################################
 
 #predicting on training
 tunedPred.nb <- predict(tunedMod.nb, task)
@@ -213,192 +298,6 @@ mean(d2$data[d2$data$mmce==min(d2$data$mmce),]$threshold)
 mean(d3$data[d3$data$mmce==min(d3$data$mmce),]$threshold)
 mean(d4$data[d4$data$mmce==min(d4$data$mmce),]$threshold)
 
-#####################################################################################
 
-
-
-
-
-
-
-#classification task
-classif.task <- makeClassifTask(id = "ks",
-                                data = train,
-                                target = "state")
-
-#learners
-lrns <- list(
-  makeLearner("classif.naiveBayes", id = "NB", predict.type = 'prob'),
-  makeLearner("classif.rpart", id = "rpart", predict.type = 'prob'),
-  makeLearner("classif.randomForest", id = "randomForest", predict.type = 'prob'),
-  makeLearner('classif.kknn', predict.type = 'prob')
-)
-
-#param tuning
-
-#naive bayes
-ps.nb <- makeParamSet(
-  makeNumericParam('laplace',lower=0,upper=100)
-)
-
-ctrl.nb <- makeTuneControlRandom(maxit = 10) 
-rdesc <- makeResampleDesc("CV", iters=5, stratify = TRUE) 
-
-res.nb <- tuneParams(lrns[[1]], 
-                  task = classif.task, 
-                  resampling = rdesc, 
-                  par.set = ps.nb, 
-                  control = ctrl.nb)
-
-#all interations show the same mmce, therefore smoothing parameter has no effect/is redundant
-
-#rpart
-ps.rp<-makeParamSet(
-  makeIntegerParam("minsplit", lower = 2, upper = 100)
-)
-
-ctrl.rp <- makeTuneControlRandom(maxit = 3) 
-rdesc <- makeResampleDesc("CV", stratify = TRUE) 
-
-res.rp <- tuneParams(lrns[[2]], 
-                     task = classif.task, 
-                     resampling = rdesc, 
-                     par.set = ps.rp, 
-                     control = ctrl.rp)
-#again all iterations have the same mmce
-
-#random forest
-ps.rf <- makeParamSet(
-  makeIntegerParam('mtry',lower=2,upper=4)
-)
-
-ctrl.rf <- makeTuneControlGrid() 
-rdesc <- makeResampleDesc("CV", iters=5, stratify.cols = "state") 
-
-set.seed(12)
-res.rf <- tuneParams(lrns[[3]], 
-                     task = classif.task, 
-                     resampling = rdesc, 
-                     par.set = ps.rf, 
-                     control = ctrl.rf)
-
-#knn
-ps.knn<-makeParamSet(
-  makeDiscreteParam('k', values = seq(2, 20, by = 1))
-)
-
-ctrl.knn <- makeTuneControlGrid() 
-rdesc <- makeResampleDesc("CV", iters=5L, stratify.cols = "state") 
-
-res.rp <- tuneParams(lrns[[4]], 
-                     task = classif.task, 
-                     resampling = rdesc, 
-                     par.set = ps.knn, 
-                     control = ctrl.knn)
-
-
-# Configure tune wrapper with tune-tuning settings (knn)
-tunedLearner1 <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl)
-
-
-#feature selection (mlr)
-library(rJava)
-library(FSelector)
-library(randomForestSRC)
-
-classif.task<-makeClassifTask(id="ks",data=ks,target="state")
-
-fv<-generateFilterValuesData(classif.task,method = 'chi.squared')
-
-plotFilterValues(fv) + coord_flip()
-
-lrn <- makeFilterWrapper(learner = "classif.kknn", fw.method = "chi.squared")
-
-ps <- makeParamSet(makeDiscreteParam("fw.perc", values = seq(0.1, 0.4, 0.05)))
-rdesc <- makeResampleDesc("CV", iters = 3)
-res <- tuneParams(lrn, task = classif.task,
-                  resampling = rdesc,
-                  par.set = ps,
-                  control = makeTuneControlGrid())
-
-### CONVERT DUMMIES TO THE FACTOR ###
-library(caret)
-ks_knn<-ks
-
-#doesnt work?###########################################
-factors<-colnames(ks[sapply(ks, is.factor)])
-header<-vector()
-
-for (i in 1:length(factors)){
-  paste("dummies_",i,sep="") <- predict(dummyVars(~ factors[i], data = ks), newdata = ks_knn)
-  header[i] <- unlist(strsplit(colnames(paste("dummies_",i,sep="")), '[.]'))[2 * (1:ncol(paste("dummies_",i,sep="")))]
-  factors[i] <- factor(paste("dummies_",i,sep="") %*% 1:ncol(paste("dummies_",i,sep="")), labels = header[i])
-}
-#####################################################3
-
-
-dummies_cat <- predict(dummyVars(~ main_category, data = ks), newdata = ks_knn)
-header <- unlist(strsplit(colnames(dummies_cat), '[.]'))[2 * (1:ncol(dummies_cat))]
-main_category <- factor(dummies_cat %*% 1:ncol(dummies_cat), labels = header)
-ks_knn$main_category<-main_category
-
-dummies_state <- predict(dummyVars(~ state, data = ks), newdata = ks_knn)
-header <- unlist(strsplit(colnames(dummies_state), '[.]'))[2 * (1:ncol(dummies_state))]
-state <- factor(dummies_state %*% 1:ncol(dummies_state), labels = header)
-ks_knn$state<-state
-
-dummies_cont <- predict(dummyVars(~ continent, data = ks), newdata = ks_knn)
-header <- unlist(strsplit(colnames(dummies_cont), '[.]'))[2 * (1:ncol(dummies_cont))]
-continent <- factor(dummies_cont %*% 1:ncol(dummies_cont), labels = header)
-ks_knn$continent<-continent
-
-
-classif.task<- makeClassifTask(id = 'ks',data=ks_knn,target="state")
-
-learners <- makeLearners(c('randomForest','rpart','kknn'),
-                         type = "classif", predict.type = "response")
-
-kknn.model<-mlr::train(lrns[[4]],classif.task)
-
-#works :D
-
-classif.task<- makeClassifTask(id = 'ks',data=ks,target="state")
-
-
-#feature selection
-## last column is the target variable Y
-Y <- ks %>% pull(state)
-
-## other columns make up the feature matrix
-X <- ks %>% select(-state)
-
-## set the MLR classification task
-sel.task <- makeClassifTask(data = cbind(train,test, target = state))
-
-## set the performance measure
-sel.measure <- mmce ## mean misclassification error
-
-## set the wrapper classification algorithm
-#sel.knn.wrapper <- makeLearner("classif.knn", k = 1)
-
-## you can try other algorithms as well
-sel.dt.wrapper <- makeLearner("classif.rpart", minsplit = 3, cp = 0, xval = 0)
-### my.wrapper <- makeLearner("classif.svm")
-### my.wrapper <- makeLearner("classif.naiveBayes")
-
-################################################
-### compute performance with full set of features
-
-sel.rdesc <- makeResampleDesc("CV", iters=5)
-
-sel.repcv.full <- resample(sel.dt.wrapper, 
-                       classif.task, 
-                       sel.rdesc,
-                       measures = sel.measure)
-
-sel.full.mean <- mean(sel.repcv.full$measures.test[[2]])
-cat('Repeated CV error % with full set of features =', 100 * round(sel.full.mean,3))
-
-################################################
 
 
