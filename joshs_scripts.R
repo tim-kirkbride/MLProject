@@ -290,20 +290,22 @@ plotThreshVsPerf(d.rf) + labs(title = 'Figure 9. Threshold Adjustment for Random
 plotThreshVsPerf(d.knn) + labs(title = 'Figure 10. Threshold Adjustment for 2-KNN', x = 'Threshold')
 
 #to find ideal threshold point (maybe just report range instead of mean?)
-mean(d.nb$data[d.nb$data$mmce==min(d.nb$data$mmce),]$threshold)
-mean(d.rpart$data[d.rpart$data$mmce==min(d.rpart$data$mmce),]$threshold)
-mean(d.rf$data[d.rf$data$mmce==min(d.rf$data$mmce),]$threshold)
-mean(d.knn$data[d.knn$data$mmce==min(d.knn$data$mmce),]$threshold)
+
+nb.thresh<-mean(d.nb$data[d.nb$data$mmce==min(d.nb$data$mmce),]$threshold)
+rpart.thresh<-mean(d.rpart$data[d.rpart$data$mmce==min(d.rpart$data$mmce),]$threshold)
+rf.thresh<-mean(d.rf$data[d.rf$data$mmce==min(d.rf$data$mmce),]$threshold)
+knn.thresh<-mean(d.knn$data[d.knn$data$mmce==min(d.knn$data$mmce),]$threshold)
 
 
+threshPred.nb <- setThreshold(pred.nb,nb.thresh)
+threshPred.rpart <- setThreshold(pred.rpart,rpart.thresh)
+threshPred.rf <- setThreshold(pred.rf,rf.thresh)
+threshPred.knn <-setThreshold(pred.knn,rf.thresh)
 
-
-
-
-
-
-
-
+performance(threshPred.nb)
+performance(threshPred.rpart)
+performance(threshPred.rf)
+performance(threshPred.knn)
 
 
 #training tuned learners
@@ -353,14 +355,8 @@ plotThreshVsPerf(d.rpart) + labs(title = 'Threshold Adjustment for Decision Tree
 plotThreshVsPerf(d.rf) + labs(title = 'Threshold Adjustment for Random Forest', x = 'Threshold')
 plotThreshVsPerf(d.knn) + labs(title = 'Threshold Adjustment for 4-KNN', x = 'Threshold')
 
-
-
 #to find ideal threshold point (maybe just report range instead of mean?)
-mean(d.nb$data[d.nb$data$mmce==min(d.nb$data$mmce),]$threshold)
-mean(d.rpart$data[d.rpart$data$mmce==min(d.rpart$data$mmce),]$threshold)
-mean(d.rf$data[d.rf$data$mmce==min(d.rf$data$mmce),]$threshold)
-mean(d.knn$data[d.knn$data$mmce==min(d.knn$data$mmce),]$threshold)
 
 
-
-
+calculateConfusionMatrix(pred.nb)
+performance(pred.nb)
