@@ -289,74 +289,24 @@ plotThreshVsPerf(d.rpart) + labs(title = 'Figure 8. Threshold Adjustment for Dec
 plotThreshVsPerf(d.rf) + labs(title = 'Figure 9. Threshold Adjustment for Random Forest', x = 'Threshold')
 plotThreshVsPerf(d.knn) + labs(title = 'Figure 10. Threshold Adjustment for 2-KNN', x = 'Threshold')
 
-#to find ideal threshold point (maybe just report range instead of mean?)
+
 
 nb.thresh<-mean(d.nb$data[d.nb$data$mmce==min(d.nb$data$mmce),]$threshold)
 rpart.thresh<-mean(d.rpart$data[d.rpart$data$mmce==min(d.rpart$data$mmce),]$threshold)
 rf.thresh<-mean(d.rf$data[d.rf$data$mmce==min(d.rf$data$mmce),]$threshold)
 knn.thresh<-mean(d.knn$data[d.knn$data$mmce==min(d.knn$data$mmce),]$threshold)
 
-
 threshPred.nb <- setThreshold(pred.nb,nb.thresh)
 threshPred.rpart <- setThreshold(pred.rpart,rpart.thresh)
 threshPred.rf <- setThreshold(pred.rf,rf.thresh)
 threshPred.knn <-setThreshold(pred.knn,rf.thresh)
 
+saveRDS(threshPred.nb, file = "threshPred_nb")
+saveRDS(threshPred.rpart, file = "threshPred_rpart")
+saveRDS(threshPred.rf, file = "threshPred_rf")
+saveRDS(threshPred.knn, file = "threshPred_knn")
+
 performance(threshPred.nb)
 performance(threshPred.rpart)
 performance(threshPred.rf)
 performance(threshPred.knn)
-
-
-#training tuned learners
-tunedMod.rpart <- mlr::train(tunedLrn.rpart, task) 
-
-#predict on training data
-tunedPred<- predict(tunedMod, task)
-print(tunedPred)
-#Threshold analysis of training prediction
-d <- generateThreshVsPerfData(tunedPred, measures = list(mmce))
-plotThreshVsPerf(d) + labs(title = 'Threshold Adjustment', x = 'Threshold')
-threshold <- mean(d$data[d$data$mmce==min(d$data$mmce),]$threshold) 
-print(threshold)
-#threshold adjustment
-
-###############################################
-
-#construct wrappers with tuning constraints
-tunedlrn.nb <- makeTuneWrapper(lrns[[1]], rdesc, mmce, ps.nb, ctrl.grd)
-tunedlrn.rpart <- makeTuneWrapper(lrns[[2]], rdesc, mmce, ps.rpart, ctrl.grd)
-tunedlrn.rf <- makeTuneWrapper(lrns[[3]], rdesc, mmce, ps.rf, ctrl.grd)
-tunedlrn.knn <- makeTuneWrapper(lrns[[4]], rdesc, mmce, ps.knn, ctrl.grd)
-
-#train models with tuned learners 
-tunedMod.nb  <- mlr::train(tunedlrn.nb, task)
-tunedMod.rpart  <- mlr::train(tunedlrn.rpart, task)
-tunedMod.rf <- mlr::train(tunedlrn.rf, task)
-tunedMod.knn  <- mlr::train(tunedlrn.knn, task)
-
-#########################################
-
-#predicting on training
-tunedPred.nb <- predict(tunedMod.nb, task)
-tunedPred.rpart <- predict(tunedMod.rpart, task)
-tunedPred.rf <- predict(tunedMod.rf, task)
-tunedPred.knn<- predict(tunedMod.knn, task)
-
-#threshold assessment
-d.nb <- generateThreshVsPerfData(tunedPred.nb, measures = list(mmce))
-d.rpart <- generateThreshVsPerfData(tunedPred.rpart, measures = list(mmce))
-d.rf <- generateThreshVsPerfData(tunedPred.rf, measures = list(mmce))
-d.knn <- generateThreshVsPerfData(tunedPred.knn, measures = list(mmce))
-
-#plotting thresholds
-plotThreshVsPerf(d.nb) + labs(title = 'Threshold Adjustment for Naive Bayes', x = 'Threshold')
-plotThreshVsPerf(d.rpart) + labs(title = 'Threshold Adjustment for Decision Tree', x = 'Threshold')
-plotThreshVsPerf(d.rf) + labs(title = 'Threshold Adjustment for Random Forest', x = 'Threshold')
-plotThreshVsPerf(d.knn) + labs(title = 'Threshold Adjustment for 4-KNN', x = 'Threshold')
-
-#to find ideal threshold point (maybe just report range instead of mean?)
-
-
-calculateConfusionMatrix(pred.nb)
-performance(pred.nb)
